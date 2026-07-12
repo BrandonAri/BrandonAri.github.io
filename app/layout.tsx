@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { PageTransitionProvider } from "./page-transition";
+
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,39 +16,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3000";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (host.includes("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
-
-  return {
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: "Brandon Chen — Electronics & Controls",
+  description:
+    "Professional portfolio of Brandon Chen: electronics and controls, embedded hardware, sensor integration, and product development.",
+  icons: {
+    icon: `${basePath}/favicon.png`,
+    shortcut: `${basePath}/favicon.png`,
+  },
+  openGraph: {
     title: "Brandon Chen — Electronics & Controls",
     description:
-      "Engineering portfolio of Brandon Chen: embedded control, electronics diagnostics, physical integration, and motion systems.",
-    icons: {
-      icon: "/favicon.png",
-      shortcut: "/favicon.png",
-    },
-    openGraph: {
-      title: "Brandon Chen — Electronics & Controls",
-      description:
-        "I build, measure, and revise real systems. Selected engineering work by Brandon Chen.",
-      type: "website",
-      url: origin,
-    },
-    twitter: {
-      card: "summary",
-      title: "Brandon Chen — Electronics & Controls",
-      description: "Embedded controls, electronics diagnostics, and physical systems.",
-    },
-  };
-}
+      "Electronics, embedded hardware, sensor integration, and product development by Brandon Chen.",
+    type: "website",
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary",
+    title: "Brandon Chen — Electronics & Controls",
+    description: "Embedded hardware, sensor integration, and product development.",
+  },
+};
 
 export default function RootLayout({
   children,
@@ -55,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <PageTransitionProvider>{children}</PageTransitionProvider>
       </body>
     </html>
   );
