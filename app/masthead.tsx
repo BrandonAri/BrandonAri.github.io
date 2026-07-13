@@ -681,7 +681,9 @@ export function Masthead() {
                 </div>
               </div>
 
-              <span className="hero__scroll-cue" aria-hidden="true" />
+              <span className="hero__scroll-cue" aria-hidden="true">
+                <Arrow direction="down" />
+              </span>
             </div>
           </section>
 

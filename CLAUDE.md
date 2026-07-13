@@ -98,3 +98,5 @@ that is this suite's regression style.
   `/Users/brandon/Documents/Dev/Workflow/Web/BrandonPortfolio_backup/2026-07-13-approved-mobile-native-8b1f818`.
 - `backup/2026-07-13-before-scroll-cue` — deployed Instrument Sans version at
   `7ab6b45`, before adding the opening-screen scroll indicator.
+- `backup/2026-07-13-before-shared-arrow-scroll-cue` — deployed triangular-cue
+  version at `aae2d77`, before replacing it with the shared line-arrow design.
