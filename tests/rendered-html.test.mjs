@@ -216,6 +216,10 @@ test("reveals Xuze only while the large profile name is hovered or focused", asy
   assert.match(css, /\.profile-name-swap__alternate\s*\{[\s\S]*?opacity:\s*0[\s\S]*?translate3d\(0, 105%, 0\)/);
   assert.match(css, /\.profile-name-swap:hover \.profile-name-swap__default/);
   assert.match(css, /\.profile-name-swap:hover \.profile-name-swap__alternate/);
+  assert.match(css, /\.profile-name-swap:focus-visible \.profile-name-swap__default/);
+  assert.match(css, /\.profile-name-swap:focus-visible \.profile-name-swap__alternate/);
+  assert.match(masthead, /if \(crossProgress > 0\.02\) setWhiteIntroInert\(false\)/);
+  assert.match(masthead, /else if \(crossProgress <= 0\) setWhiteIntroInert\(true\)/);
   assert.doesNotMatch(css, /animation:\s*[^;]*infinite/);
 });
 
@@ -246,7 +250,7 @@ test("orders the opening transition without a dead white interval", async () => 
   assert.match(masthead, /aria-label="Hardware engineer\. App developer\. PM\."/);
   assert.match(masthead, /mixRgb\(\[17, 18, 21\], \[243, 244, 241\], backgroundProgress\)/);
   assert.match(masthead, /mixRgb\(\[243, 238, 229\], \[23, 26, 25\], backgroundProgress\)/);
-  assert.match(masthead, /setWhiteIntroInert\(crossProgress < 0\.995\)/);
+  assert.doesNotMatch(masthead, /setWhiteIntroInert\(crossProgress < 0\.995\)/);
   assert.match(masthead, /const crossStart = exitEnd/);
   assert.match(masthead, /const crossEnd = crossStart \+ crossLength/);
   assert.match(masthead, /--hero-frame-y/);
@@ -334,7 +338,7 @@ test("keeps the opening transition directly synchronized to scroll in both direc
   assert.doesNotMatch(masthead, /holdLength|displayTravel|velocityStep|const decay/);
 });
 
-test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", async () => {
+test("keeps mobile Safari on the normal document scroller and hardens project sheets", async () => {
   const [layout, masthead, projects, page, about, topNav, scrollLock, arrow, css] =
     await Promise.all([
       readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -365,8 +369,15 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
   assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?padding-left:\s*0/);
   assert.match(projects, /className="project-sheet__scroller"/);
+  assert.match(projects, /handle\.setPointerCapture\(pointerId\)/);
+  assert.match(projects, /typeof handle\.setPointerCapture === "function"/);
+  assert.match(projects, /typeof handle\.hasPointerCapture === "function"/);
+  assert.match(projects, /lostpointercapture/);
+  assert.match(projects, /unlockPageScrollRef\.current\?\.\(\)/);
   assert.match(scrollLock, /let lockCount = 0/);
-  assert.match(scrollLock, /body\.style\.position = "fixed"/);
+  assert.doesNotMatch(scrollLock, /body\.style\.position = "fixed"/);
+  assert.doesNotMatch(scrollLock, /body\.style\.top/);
+  assert.match(scrollLock, /html\.style\.overflow = "hidden"/);
   assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
   assert.match(topNav, /portfolio-theme-progress/);
   assert.doesNotMatch(topNav, /canvasTone|theme-color/);
@@ -381,6 +392,9 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(css, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*?\.nav__brand,[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent/);
   assert.match(css, /\.nav\[data-visible="false"\] \.nav__brand[\s\S]*?translate3d\(0, -135%, 0\)/);
   assert.match(css, /\.project-sheet__scroller\s*\{[\s\S]*?overscroll-behavior-y:\s*none[\s\S]*?background:\s*var\(--canvas\)/);
+  assert.match(css, /\.project-sheet\s*\{[\s\S]*?height:\s*min\(calc\(100vh[\s\S]*?height:\s*min\(calc\(100dvh/);
+  assert.match(css, /\.project-sheet__scroller\s*\{[\s\S]*?min-height:\s*0/);
+  assert.match(css, /\.project-sheet\.is-open:not\(\.is-dragging\)[\s\S]*?will-change:\s*auto/);
   assert.match(css, /\.orientation-guard\s*\{[\s\S]*?display:\s*none/);
   assert.match(css, /\(orientation: landscape\)[\s\S]*?\(pointer: coarse\)[\s\S]*?\.orientation-guard/);
   assert.match(layout, /Rotate your phone upright\./);
@@ -408,7 +422,9 @@ test("finishes the reveal half of page transitions across full document loads", 
   assert.match(transition, /sessionStorage\.setItem\(revealFlag, "1"\)/);
   assert.match(transition, /if \(!document\.documentElement\.dataset\.ptReveal\) return/);
   assert.match(transition, /targetPathRef\.current = pathname;\s*setPhase\("holding"\)/);
-  assert.match(transition, /if \(phase !== "covering"\) return;\s*return lockPageScroll\(\{ restoreScroll: false \}\)/);
+  assert.match(transition, /phase !== "covering"/);
+  assert.match(transition, /max-width: 620px[\s\S]*?orientation: portrait/);
+  assert.match(transition, /return lockPageScroll\(\{ restoreScroll: false \}\)/);
   assert.match(transition, /event\.persisted/);
   assert.match(layout, /prePaintState/);
   assert.match(layout, /sessionStorage\.getItem\("pt-reveal"\)/);
@@ -432,25 +448,14 @@ test("restores the page position instantly when a project sheet closes", async (
   assert.doesNotMatch(scrollLock, /window\.scrollTo\(0, restore\.scrollY\)/);
 });
 
-test("gates phones behind an unsupported-mobile notice with a quiet entrance", async () => {
-  const [layout, gate, css] = await Promise.all([
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/mobile-gate.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(layout, /<MobileGate \/>/);
-  assert.match(layout, /sessionStorage\.getItem\("mobile-gate-dismissed"\)/);
-  assert.match(gate, /This site does not support mobile phones yet\./);
-  assert.match(gate, /Still enter/);
-  assert.match(gate, /sessionStorage\.setItem\("mobile-gate-dismissed", "1"\)/);
-  assert.match(css, /\.mobile-gate\s*\{\s*display:\s*none/);
-  assert.match(
-    css,
-    /@media \(max-width: 620px\) and \(orientation: portrait\) and \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.mobile-gate\s*\{[\s\S]*?position:\s*fixed[\s\S]*?z-index:\s*4000/,
+test("serves the portfolio directly on phones without an opaque fixed gate", async () => {
+  const layout = await readFile(
+    new URL("../app/layout.tsx", import.meta.url),
+    "utf8",
   );
-  assert.match(css, /html\[data-mobile-gate="off"\] \.mobile-gate/);
-  assert.match(css, /\.mobile-gate__enter\s*\{[\s\S]*?rgba\(243, 238, 229, 0\.14\)/);
+
+  assert.doesNotMatch(layout, /MobileGate/);
+  assert.doesNotMatch(layout, /mobile-gate-dismissed/);
 });
 
 test("drives the mobile portrait opening transition with native sticky scrolling", async () => {
@@ -464,7 +469,11 @@ test("drives the mobile portrait opening transition with native sticky scrolling
     css.indexOf("@media (orientation: landscape) and (max-height: 620px)"),
   );
 
-  assert.match(mobileBlock, /html\s*\{[\s\S]*?background:\s*#111215/);
+  assert.match(mobileBlock, /html,\s*body\s*\{[\s\S]*?overflow:\s*visible/);
+  assert.match(mobileBlock, /html\s*\{[\s\S]*?background:\s*transparent/);
+  assert.match(mobileBlock, /body\s*\{[\s\S]*?background:\s*transparent/);
+  assert.doesNotMatch(mobileBlock, /html\s*\{[^}]*background:\s*#111215/);
+  assert.match(mobileBlock, /\.site-document\s*\{[\s\S]*?overflow-x:\s*clip/);
   assert.match(mobileBlock, /\.masthead-stage\s*\{[\s\S]*?position:\s*static[\s\S]*?height:\s*100%[\s\S]*?overflow:\s*visible/);
   assert.match(mobileBlock, /\.hero\s*\{[\s\S]*?position:\s*sticky[\s\S]*?top:\s*0[\s\S]*?transform:\s*none !important/);
   assert.match(mobileBlock, /\.white-intro\s*\{[\s\S]*?top:\s*auto[\s\S]*?bottom:\s*0[\s\S]*?transform:\s*none !important/);

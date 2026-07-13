@@ -4,7 +4,7 @@ import { Masthead } from "./masthead";
 
 export default function Home() {
   return (
-    <main id="top">
+    <main className="site-document" id="top">
       <Masthead />
 
       <section className="experience-section" id="experience">

@@ -50,6 +50,7 @@ export function ProjectArchive() {
   const closeTimerRef = useRef<number | null>(null);
   const closeProjectRef = useRef<() => void>(() => undefined);
   const removeDragListenersRef = useRef<(() => void) | null>(null);
+  const unlockPageScrollRef = useRef<(() => void) | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -61,6 +62,8 @@ export function ProjectArchive() {
     }
     closingRef.current = false;
     dragOffsetRef.current = 0;
+    unlockPageScrollRef.current?.();
+    unlockPageScrollRef.current = null;
     setActiveProject(null);
     setDragOffset(0);
     setDragging(false);
@@ -89,6 +92,7 @@ export function ProjectArchive() {
     if (!activeProject) return;
 
     const unlockPageScroll = lockPageScroll();
+    unlockPageScrollRef.current = unlockPageScroll;
     closeButtonRef.current?.focus({ preventScroll: true });
     let settleFrame = 0;
     const openingFrame = window.requestAnimationFrame(() => {
@@ -105,6 +109,9 @@ export function ProjectArchive() {
     return () => {
       window.cancelAnimationFrame(openingFrame);
       window.cancelAnimationFrame(settleFrame);
+      if (unlockPageScrollRef.current === unlockPageScroll) {
+        unlockPageScrollRef.current = null;
+      }
       unlockPageScroll();
       window.removeEventListener("keydown", handleKey);
     };
@@ -139,11 +146,25 @@ export function ProjectArchive() {
     draggingRef.current = true;
     setDragging(true);
     const pointerId = event.pointerId;
+    const handle = event.currentTarget;
 
     function removeListeners() {
       window.removeEventListener("pointermove", moveDrag);
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", cancelDrag);
+      window.removeEventListener("blur", cancelDragOnBlur);
+      handle.removeEventListener("lostpointercapture", cancelDrag);
+      if (
+        typeof handle.hasPointerCapture === "function" &&
+        typeof handle.releasePointerCapture === "function" &&
+        handle.hasPointerCapture(pointerId)
+      ) {
+        try {
+          handle.releasePointerCapture(pointerId);
+        } catch {
+          // The browser may have already released capture for this pointer.
+        }
+      }
       removeDragListenersRef.current = null;
     }
 
@@ -166,8 +187,8 @@ export function ProjectArchive() {
       }
     }
 
-    function cancelDrag(pointerEvent: PointerEvent) {
-      if (pointerEvent.pointerId !== pointerId) return;
+    function cancelDrag(pointerEvent?: PointerEvent) {
+      if (pointerEvent && pointerEvent.pointerId !== pointerId) return;
       removeListeners();
       draggingRef.current = false;
       dragOffsetRef.current = 0;
@@ -175,9 +196,22 @@ export function ProjectArchive() {
       setDragOffset(0);
     }
 
+    function cancelDragOnBlur() {
+      cancelDrag();
+    }
+
     window.addEventListener("pointermove", moveDrag);
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", cancelDrag);
+    window.addEventListener("blur", cancelDragOnBlur);
+    handle.addEventListener("lostpointercapture", cancelDrag);
+    if (typeof handle.setPointerCapture === "function") {
+      try {
+        handle.setPointerCapture(pointerId);
+      } catch {
+        // Window listeners still provide a complete drag fallback.
+      }
+    }
     removeDragListenersRef.current = removeListeners;
   };
 

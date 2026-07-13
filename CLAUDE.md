@@ -19,8 +19,8 @@ Production: https://brandonaris.com — deployed by GitHub Pages on every push t
 4. **Don't claim mobile/iOS is fixed from screenshots.** Validate with
    continuous frame/position sampling (Playwright WebKit) and say plainly that
    final confirmation needs Brandon's phone.
-5. Mobile is currently **paused and gated** (see Mobile gate below). Don't
-   resume mobile transition work unless Brandon asks.
+5. Mobile is served directly again. Do not reintroduce an opaque fixed mobile
+   gate or paint the root canvas to imitate Safari's toolbar background.
 6. Never stage/delete/publish `public/media/brandon-portrait-dark.jpeg`
    (untracked on purpose).
 
@@ -63,14 +63,13 @@ Production: https://brandonaris.com — deployed by GitHub Pages on every push t
   `.project-sheet__scroller` and its overscroll protection — it prevents dark
   flashes during iOS overscroll.
 
-## Mobile gate
+## Mobile Safari root scrolling
 
-`app/mobile-gate.tsx`, rendered in `app/layout.tsx` on every page. Phones
-(portrait, `hover: none` + `pointer: coarse`, ≤620px) get a full-screen
-"This site does not support mobile phones yet." notice with a barely visible
-"Still enter" button (14% opacity). Dismissal is remembered per session via
-`sessionStorage["mobile-gate-dismissed"]` and applied pre-paint through
-`html[data-mobile-gate="off"]`. Desktop never renders it (`display: none`).
+Phones use the document root as the scroll container. At the portrait mobile
+breakpoint, `html` and `body` keep visible overflow and transparent backgrounds;
+horizontal clipping belongs to the normal-flow `.site-document` instead. Do
+not add a fixed full-screen app wrapper or a colored root-canvas workaround.
+`app/mobile-gate.tsx` is retained only as unused history and is not rendered.
 
 ## Tests
 
@@ -85,3 +84,6 @@ that is this suite's regression style.
   fixes and mobile gate (also tag `backup-2026-07-13`).
 - `backup/2026-07-13-deployed-fixes` — state deployed on 2026-07-13
   (commit `a0ff728`).
+- `backup/2026-07-13-before-safari-root-hover-sheet` — restore point before
+  normal mobile-root scrolling, deterministic name hover, and project-sheet
+  lock hardening.

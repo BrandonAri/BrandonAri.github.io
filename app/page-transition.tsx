@@ -102,9 +102,12 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
   }, [pathname, phase]);
 
   useEffect(() => {
-    // Only the departing page needs its scroll frozen while the mask covers
-    // it. The destination document must stay free to honor anchor targets.
-    if (phase !== "covering") return;
+    if (
+      phase !== "covering" ||
+      window.matchMedia("(max-width: 620px) and (orientation: portrait)").matches
+    ) {
+      return;
+    }
     return lockPageScroll({ restoreScroll: false });
   }, [phase]);
 

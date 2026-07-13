@@ -221,7 +221,11 @@ export function Masthead() {
         `${(1 - crossProgress) * metrics.stageHeight}px`,
       );
       applyRoleMotion(roleProgress);
-      setWhiteIntroInert(crossProgress < 0.995);
+      // Once any meaningful part of the intro is visible it must be available
+      // for hit testing. Waiting for an exact end-state made the name hover
+      // depend on scroll rounding and viewport-unit behavior across browsers.
+      if (crossProgress > 0.02) setWhiteIntroInert(false);
+      else if (crossProgress <= 0) setWhiteIntroInert(true);
 
       const timelineTone = backgroundProgress >= 0.56 ? "light" : "dark";
       if (timelineTone !== lastTimelineTone) {

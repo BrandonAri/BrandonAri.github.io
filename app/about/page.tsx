@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="about-placeholder">
+    <main className="site-document about-placeholder">
       <TopNav />
 
       <section className="about-placeholder__content" aria-labelledby="about-title">
