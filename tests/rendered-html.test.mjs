@@ -123,7 +123,10 @@ test("includes draggable project sheets and corrected repair evidence", async ()
   assert.match(projects, /onTransitionEnd=\{finishCloseOnTransition\}/);
   assert.match(projects, /"--sheet-drag-y": `\$\{dragOffset\}px`/);
   assert.match(projects, /window\.addEventListener\("pointercancel", cancelDrag\)/);
-  assert.match(projects, /lastTriggerRef\.current\?\.focus\(\)/);
+  assert.match(projects, /lastTriggerRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(projects, /const unlockPageScroll = lockPageScroll\(\)/);
+  assert.match(projects, /className="project-sheet__scroller"/);
+  assert.match(css, /\.project-sheet__scroller\s*\{[\s\S]*?-webkit-overflow-scrolling:\s*touch[\s\S]*?touch-action:\s*pan-y/);
   assert.match(css, /\.project-sheet\.is-opening,[\s\S]*?\.project-sheet\.is-closing[\s\S]*?translate3d\(0, 105%, 0\)/);
   assert.match(css, /\.sheet-layer\.is-closing[\s\S]*?pointer-events:\s*none/);
   assert.match(css, /\.sheet-layer\.is-opening \.sheet-backdrop,[\s\S]*?\.sheet-layer\.is-closing \.sheet-backdrop[\s\S]*?opacity:\s*0/);
@@ -149,13 +152,16 @@ test("copies only the referenced top bar and rolling-name banner", async () => {
   assert.match(topNav, /href="\/about"[\s\S]*?>\s*About\s*<\/TransitionLink>/);
   assert.match(topNav, /href="\/\#experience"/);
   assert.doesNotMatch(topNav, /nav__dot/);
+  assert.match(topNav, /className="nav__bar"/);
+  assert.match(topNav, /data-tone=\{tone\}/);
   assert.match(masthead, /className="hero__photo"/);
   assert.match(masthead, /className="hero__shade"/);
   assert.match(masthead, /Hardware engineer\./);
   assert.match(masthead, /App developer\./);
   assert.match(masthead, /PM\./);
   assert.match(masthead, /portrait-light-scan\.jpeg/);
-  assert.match(css, /\.nav\s*\{[\s\S]*?mix-blend-mode:\s*difference/);
+  assert.doesNotMatch(css, /\.nav\s*\{[^}]*mix-blend-mode:/);
+  assert.match(css, /\.nav__bar\s*\{[\s\S]*?-webkit-backdrop-filter:\s*blur\(19px\)/);
   assert.doesNotMatch(css, /\.nav__dot/);
   assert.match(css, /\.hero,\s*\.white-intro\s*\{[\s\S]*?min-height:\s*100svh/);
   assert.doesNotMatch(css, /min-height:\s*(?:108|115)svh/);
@@ -253,14 +259,14 @@ test("orders the opening transition without a dead white interval", async () => 
   assert.match(css, /\.hero\s*\{[\s\S]*?transform:\s*translate3d\(0, var\(--hero-frame-y\), 0\)/);
   assert.match(css, /\.hero__role h1 span\s*\{[\s\S]*?width:\s*max-content[\s\S]*?transform-origin:\s*left top[\s\S]*?will-change:\s*transform/);
   assert.match(css, /\.white-intro\s*\{[\s\S]*?background:\s*var\(--canvas\)[\s\S]*?transform:\s*translate3d\(0, var\(--white-intro-panel-y\), 0\)/);
-  assert.match(css, /--white-intro-panel-y:\s*100svh/);
+  assert.match(css, /--white-intro-panel-y:\s*100dvh/);
   assert.doesNotMatch(css, /--hero-foreground-y|--white-intro-y/);
   assert.doesNotMatch(css, /\.white-intro__inner\s*\{[^}]*transform:/);
   assert.doesNotMatch(css, /mask-image/);
   assert.doesNotMatch(css, /--hero-foreground-opacity/);
   assert.doesNotMatch(css, /--white-intro-opacity/);
   assert.doesNotMatch(css, /\.white-intro__inner\s*\{[^}]*opacity:/);
-  assert.doesNotMatch(css, /transition:\s*color/);
+  assert.doesNotMatch(css, /\.hero\s*\{[^}]*transition:\s*color/);
   assert.doesNotMatch(masthead, /PortraitReveal|brandon-portrait\.jpeg/);
   assert.match(css, /\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.hero__role h1 span\s*\{[\s\S]*?transform:\s*none !important/);
   await assert.rejects(
@@ -328,4 +334,46 @@ test("uses velocity-aware critical damping for consistent scroll resistance", as
   assert.match(masthead, /openingTravelRef\.current = travelled/);
   assert.match(masthead, /openingVelocityRef\.current = displayVelocity/);
   assert.match(masthead, /Math\.abs\(targetTravel - displayTravel\) >= 0\.12/);
+});
+
+test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async () => {
+  const [layout, masthead, projects, page, about, topNav, scrollLock, arrow, css] =
+    await Promise.all([
+      readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/masthead.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/project-archive.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/about/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/top-nav.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/scroll-lock.ts", import.meta.url), "utf8"),
+      readFile(new URL("../app/arrow.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    ]);
+
+  assert.match(layout, /viewportFit:\s*"cover"/);
+  assert.match(layout, /themeColor:\s*"#111215"/);
+  assert.match(css, /env\(safe-area-inset-top/);
+  assert.match(css, /env\(safe-area-inset-bottom/);
+  assert.match(css, /height:\s*100dvh/);
+  assert.match(masthead, /if \(hero\.clientWidth <= 620\)/);
+  assert.match(masthead, /targetScale:\s*1/);
+  assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?display:\s*block/);
+  assert.match(projects, /className="project-sheet__scroller"/);
+  assert.match(scrollLock, /let lockCount = 0/);
+  assert.match(scrollLock, /body\.style\.position = "fixed"/);
+  assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
+  assert.match(topNav, /portfolio-theme-progress/);
+  assert.match(css, /sheet-glass-sweep/);
+  assert.match(css, /prefers-reduced-transparency/);
+  assert.match(arrow, /ui-arrow--\$\{direction\}/);
+  assert.doesNotMatch(
+    [masthead, projects, page, about].join("\n"),
+    /[↗↘→↓↑]/,
+  );
+
+  const exportedHome = await readFile(
+    new URL("../dist/client/index.html", import.meta.url),
+    "utf8",
+  );
+  assert.match(exportedHome, /viewport-fit=cover/);
 });

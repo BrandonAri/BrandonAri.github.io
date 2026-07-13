@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Arrow } from "../arrow";
 import { TransitionLink } from "../page-transition";
 import { TopNav } from "../top-nav";
 
@@ -34,7 +35,7 @@ export default function AboutPage() {
             <span />
           </div>
           <TransitionLink href="/">
-            Return to portfolio <span aria-hidden="true">↗</span>
+            Return to portfolio <Arrow direction="up-right" />
           </TransitionLink>
         </div>
       </section>

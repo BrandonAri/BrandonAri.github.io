@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Arrow } from "./arrow";
 import { TopNav } from "./top-nav";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -106,6 +107,30 @@ export function Masthead() {
       const sideInset = Math.min(80, Math.max(16, hero.clientWidth * 0.05));
       const gap = Math.min(22, Math.max(6, hero.clientWidth * 0.012));
       const availableWidth = Math.max(1, hero.clientWidth - sideInset * 2);
+
+      if (hero.clientWidth <= 620) {
+        const mobileGap = Math.min(12, Math.max(5, hero.clientWidth * 0.018));
+        const targetHeight =
+          lineBounds.reduce((total, bounds) => total + bounds.height, 0) +
+          mobileGap * Math.max(0, lineBounds.length - 1);
+        let targetTop = (hero.clientHeight - targetHeight) / 2;
+
+        roleMotionRef.current = roleLines.map((element, index) => {
+          const bounds = lineBounds[index];
+          const motion = {
+            element,
+            startLeft: bounds.left - heroBounds.left,
+            startTop: bounds.top - heroBounds.top,
+            targetLeft: (hero.clientWidth - bounds.width) / 2,
+            targetScale: 1,
+            targetTop,
+          };
+          targetTop += bounds.height + mobileGap;
+          return motion;
+        });
+        return;
+      }
+
       const naturalWidth = lineBounds.reduce(
         (total, bounds) => total + bounds.width,
         0,
@@ -214,6 +239,7 @@ export function Masthead() {
       );
       applyRoleMotion(roleProgress);
       whiteIntro.inert = crossProgress < 0.995;
+      window.dispatchEvent(new Event("portfolio-theme-progress"));
     };
 
     const measureTimeline = () => {
@@ -687,10 +713,10 @@ export function Masthead() {
                   </p>
                   <div className="white-intro__links">
                     <a className="white-intro__primary" href="#experience">
-                      View experience <span aria-hidden="true">↓</span>
+                      View experience <Arrow direction="down" />
                     </a>
                     <a className="white-intro__secondary" href="#work">
-                      Selected work <span aria-hidden="true">↘</span>
+                      Selected work <Arrow direction="down-right" />
                     </a>
                   </div>
                 </div>
