@@ -91,3 +91,8 @@ that is this suite's regression style.
   lock hardening.
 - `backup/2026-07-13-before-mobile-native-motion` — restore point before the
   portrait-mobile masthead was separated from the desktop JavaScript timeline.
+- `backup/2026-07-13-approved-mobile-native-before-font` and annotated tag
+  `backup-2026-07-13-approved-mobile-native` — user-confirmed smooth mobile
+  baseline at `8b1f818`, before changing the rolling-name font. A documented
+  source snapshot is stored at
+  `/Users/brandon/Documents/Dev/Workflow/Web/BrandonPortfolio_backup/2026-07-13-approved-mobile-native-8b1f818`.

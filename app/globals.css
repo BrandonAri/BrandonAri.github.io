@@ -417,6 +417,9 @@ video {
   bottom: 4.5vh;
   left: 0;
   overflow: hidden;
+  font-family: var(--font-instrument-sans), var(--font-geist-sans), Arial, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.04em;
   pointer-events: none;
 }
 

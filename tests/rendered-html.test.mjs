@@ -297,11 +297,15 @@ test("uses one shared left-aligned heading system without forced desktop breaks"
 });
 
 test("keeps the rolling name moving at idle and reverses with scroll direction", async () => {
-  const [masthead, css] = await Promise.all([
+  const [layout, masthead, css] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/masthead.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
+  assert.match(layout, /import \{ Geist, Geist_Mono, Instrument_Sans \} from "next\/font\/google"/);
+  assert.match(layout, /variable:\s*"--font-instrument-sans"/);
+  assert.match(layout, /\$\{instrumentSans\.variable\}/);
   assert.match(masthead, /Array\.from\(\{ length: 8 \}/);
   assert.match(masthead, /const idleNameSpeed = 42/);
   assert.match(masthead, /const maximumScrollNameSpeed = 1000/);
@@ -323,6 +327,7 @@ test("keeps the rolling name moving at idle and reverses with scroll direction",
   assert.doesNotMatch(masthead, /normalizedExitProgress|exitCurveAtEntry/);
   assert.match(masthead, /requestAnimationFrame\(frame\)/);
   assert.match(masthead, /prefers-reduced-motion: reduce/);
+  assert.match(css, /\.hero__name\s*\{[\s\S]*?font-family:\s*var\(--font-instrument-sans\), var\(--font-geist-sans\), Arial, sans-serif[\s\S]*?font-weight:\s*500[\s\S]*?letter-spacing:\s*-0\.04em/);
   assert.match(css, /\.hero__name-track[\s\S]*?will-change:\s*transform/);
   assert.doesNotMatch(css, /\.hero__name\s*\{[^}]*opacity:/);
   assert.match(css, /@media \(max-width: 980px\)[\s\S]*?\.menu-toggle[\s\S]*?display:\s*grid/);

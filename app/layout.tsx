@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { PageTransitionProvider } from "./page-transition";
 
@@ -17,6 +17,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
@@ -56,7 +61,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSans.variable}`}
+      >
         <script dangerouslySetInnerHTML={{ __html: prePaintState }} />
         <PageTransitionProvider>{children}</PageTransitionProvider>
         <div className="orientation-guard" role="status">
