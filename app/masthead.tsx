@@ -243,7 +243,9 @@ export function Masthead() {
         return false;
       }
 
-      const stageHeight = stage.clientHeight || window.innerHeight;
+      const stageHeight =
+        (mobilePortrait.matches ? hero.clientHeight : stage.clientHeight) ||
+        window.innerHeight;
       const viewportWidth = window.innerWidth;
       sequenceDocumentTop = window.scrollY + sequence.getBoundingClientRect().top;
       sequenceDocumentTopRef.current = sequenceDocumentTop;
@@ -258,8 +260,9 @@ export function Masthead() {
         stageHeight * 0.75,
         typicalTailDistance / 1.55,
       );
-      const crossLength =
-        stageHeight * (mobilePortrait.matches ? 1.28 : 0.82);
+      const crossLength = mobilePortrait.matches
+        ? stageHeight
+        : stageHeight * 0.82;
       const exitStart = backgroundLength;
       const exitEnd = exitStart + exitLength;
       const crossStart = exitEnd;

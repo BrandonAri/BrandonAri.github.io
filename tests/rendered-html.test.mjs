@@ -358,7 +358,8 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(masthead, /const mobilePortrait = window\.matchMedia/);
   assert.match(masthead, /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?roleMotionRef\.current = \[\]/);
   assert.doesNotMatch(masthead, /const follow = 1 - Math\.exp|velocityStep|roleLag/);
-  assert.match(masthead, /stageHeight \* \(mobilePortrait\.matches \? 1\.28 : 0\.82\)/);
+  assert.match(masthead, /const crossLength = mobilePortrait\.matches\s*\?\s*stageHeight\s*:\s*stageHeight \* 0\.82/);
+  assert.match(masthead, /mobilePortrait\.matches \? hero\.clientHeight : stage\.clientHeight/);
   assert.match(masthead, /window\.addEventListener\("touchmove", scheduleUpdate/);
   assert.match(masthead, /const currentOpeningTravel = \(\) =>/);
   assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
@@ -394,4 +395,25 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
     "utf8",
   );
   assert.match(exportedHome, /viewport-fit=cover/);
+});
+
+test("drives the mobile portrait opening transition with native sticky scrolling", async () => {
+  const [masthead, css] = await Promise.all([
+    readFile(new URL("../app/masthead.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  const mobileBlock = css.slice(
+    css.indexOf("@media (max-width: 620px) and (orientation: portrait)"),
+    css.indexOf("@media (orientation: landscape) and (max-height: 620px)"),
+  );
+
+  assert.match(mobileBlock, /html\s*\{[\s\S]*?background:\s*#111215/);
+  assert.match(mobileBlock, /\.masthead-stage\s*\{[\s\S]*?position:\s*static[\s\S]*?height:\s*100%[\s\S]*?overflow:\s*visible/);
+  assert.match(mobileBlock, /\.hero\s*\{[\s\S]*?position:\s*sticky[\s\S]*?top:\s*0[\s\S]*?transform:\s*none !important/);
+  assert.match(mobileBlock, /\.white-intro\s*\{[\s\S]*?top:\s*auto[\s\S]*?bottom:\s*0[\s\S]*?transform:\s*none !important/);
+  assert.doesNotMatch(mobileBlock, /--white-intro-panel-y/);
+
+  assert.match(masthead, /const crossLength = mobilePortrait\.matches\s*\?\s*stageHeight\s*:\s*stageHeight \* 0\.82/);
+  assert.match(masthead, /\(mobilePortrait\.matches \? hero\.clientHeight : stage\.clientHeight\)/);
 });

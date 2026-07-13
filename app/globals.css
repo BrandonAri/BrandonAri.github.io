@@ -2087,7 +2087,7 @@ video {
     max-width: 100%;
     overflow-x: clip;
     overscroll-behavior-x: none;
-    background: transparent;
+    background: #111215;
   }
 
   body {
@@ -2102,11 +2102,20 @@ video {
     background: #111215;
   }
 
+  /*
+   * Native scroll transition: the stage stops being a sticky viewport-sized
+   * frame and instead spans the whole sequence. The hero pins itself with
+   * position: sticky and the white intro sits at the bottom of the sequence,
+   * so the cross transition is compositor-driven document scrolling instead
+   * of JS-driven transforms (which stutter in iOS Safari).
+   */
   .masthead-stage {
-    --white-intro-panel-y: 100lvh;
+    position: static;
+    height: 100%;
+    min-height: 0;
+    overflow: visible;
   }
 
-  .masthead-stage,
   .hero,
   .white-intro,
   .hero__background-layer,
@@ -2115,6 +2124,19 @@ video {
   .hero__shade {
     min-height: 100lvh;
     height: 100lvh;
+  }
+
+  .hero {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    transform: none !important;
+  }
+
+  .white-intro {
+    top: auto;
+    bottom: 0;
+    transform: none !important;
   }
 
   .hero__shade {
