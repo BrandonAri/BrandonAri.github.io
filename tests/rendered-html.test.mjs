@@ -350,6 +350,7 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
 
   assert.doesNotMatch(layout, /viewportFit|data-chrome-tone/);
   assert.match(layout, /themeColor:\s*"#111215"/);
+  assert.match(layout, /<html lang="en" data-canvas-tone="dark">/);
   assert.match(layout, /data-canvas-tone="dark"/);
   assert.match(css, /env\(safe-area-inset-top/);
   assert.match(css, /env\(safe-area-inset-bottom/);
@@ -367,6 +368,7 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
   assert.match(topNav, /portfolio-theme-progress/);
   assert.match(topNav, /document\.body\.dataset\.canvasTone = nextTone/);
+  assert.match(topNav, /document\.documentElement\.dataset\.canvasTone = nextTone/);
   assert.match(topNav, /meta\[name="theme-color"\]/);
   assert.match(topNav, /data-at-top="true"/);
   assert.match(topNav, /data-surface="false"/);

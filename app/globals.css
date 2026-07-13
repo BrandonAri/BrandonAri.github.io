@@ -33,6 +33,14 @@ html {
   background: transparent;
 }
 
+html[data-canvas-tone="dark"] {
+  background: #111215;
+}
+
+html[data-canvas-tone="light"] {
+  background: var(--canvas);
+}
+
 body {
   min-height: 100dvh;
   margin: 0;

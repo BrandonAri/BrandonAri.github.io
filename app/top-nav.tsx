@@ -201,6 +201,9 @@ export function TopNav() {
     };
 
     const applyTone = (nextTone: NavigationTone) => {
+      if (document.documentElement.dataset.canvasTone !== nextTone) {
+        document.documentElement.dataset.canvasTone = nextTone;
+      }
       if (document.body.dataset.canvasTone !== nextTone) {
         document.body.dataset.canvasTone = nextTone;
       }
