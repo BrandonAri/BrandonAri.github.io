@@ -1666,6 +1666,11 @@ video {
   to { transform: translate3d(0, -101%, 0); }
 }
 
+@keyframes mobile-name-roll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-12.5%, 0, 0); }
+}
+
 @media (max-width: 1060px) {
   .section-intro {
     grid-template-columns: 0.48fr 1.52fr;
@@ -2134,25 +2139,24 @@ video {
   }
 
   .masthead-sequence {
+    height: auto !important;
     background: #111215;
   }
 
   /*
-   * Native scroll transition: the stage stops being a sticky viewport-sized
-   * frame and instead spans the whole sequence. The hero pins itself with
-   * position: sticky and the white intro sits at the bottom of the sequence,
-   * so the cross transition is compositor-driven document scrolling instead
-   * of JS-driven transforms (which stutter in iOS Safari).
+   * Portrait phones use normal-flow geometry instead of the desktop JS
+   * timeline. The static gradient and white panel move with native document
+   * scrolling while the hero stays pinned behind them.
    */
   .masthead-stage {
-    position: static;
-    height: 100%;
+    position: relative;
+    height: auto;
     min-height: 0;
     overflow: visible;
+    background: #111215;
   }
 
   .hero,
-  .white-intro,
   .hero__background-layer,
   .hero__photo,
   .hero__photo img,
@@ -2165,13 +2169,47 @@ video {
     position: sticky;
     inset: auto;
     top: 0;
+    z-index: 1;
     transform: none !important;
+    will-change: auto;
+  }
+
+  .hero__background-layer {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto;
   }
 
   .white-intro {
-    top: auto;
-    bottom: 0;
+    position: relative;
+    inset: auto;
+    z-index: 2;
+    min-height: 100lvh;
+    height: auto;
+    margin-top: 46svh;
+    overflow: visible;
     transform: none !important;
+    will-change: auto;
+  }
+
+  .white-intro::before {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: 46svh;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(
+      to bottom,
+      rgb(17 18 21 / 0),
+      rgb(243 244 241 / 0.2) 38%,
+      var(--canvas)
+    );
+  }
+
+  .hero__name-track {
+    animation: mobile-name-roll 6.5s linear infinite;
   }
 
   .hero__shade {
@@ -2558,6 +2596,10 @@ video {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .hero__name-track {
+    animation: none !important;
   }
 
   *,

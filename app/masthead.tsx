@@ -82,9 +82,20 @@ export function Masthead() {
     const mobilePortrait = window.matchMedia(
       "(max-width: 620px) and (orientation: portrait)",
     );
+
+    // Portrait phones use a separate, CSS-only document-scroll composition.
+    // Do not install the desktop timeline observers or scroll handlers here:
+    // their full-screen style writes are expensive during iOS momentum scroll.
+    if (mobilePortrait.matches) {
+      sequence.style.removeProperty("height");
+      openingTravelRef.current = 0;
+      roleMotionRef.current = [];
+      whiteIntro.inert = false;
+      return;
+    }
+
     let frameId = 0;
     let initialized = false;
-    let lastMeasuredWidth = window.innerWidth;
     let sequenceDocumentTop = 0;
     let lastTimelineTone: "dark" | "light" | null = null;
 
@@ -253,7 +264,6 @@ export function Masthead() {
       const viewportWidth = window.innerWidth;
       sequenceDocumentTop = window.scrollY + sequence.getBoundingClientRect().top;
       sequenceDocumentTopRef.current = sequenceDocumentTop;
-      lastMeasuredWidth = viewportWidth;
       const unitWidth =
         firstNameRef.current?.getBoundingClientRect().width ??
         viewportWidth * 0.72;
@@ -293,6 +303,8 @@ export function Masthead() {
     const tick = () => {
       frameId = 0;
 
+      if (mobilePortrait.matches) return;
+
       if (isStaticLayout()) {
         openingTravelRef.current = 0;
         setWhiteIntroInert(false);
@@ -303,17 +315,20 @@ export function Masthead() {
     };
 
     const scheduleUpdate = () => {
+      if (mobilePortrait.matches) return;
       if (!frameId) {
         frameId = window.requestAnimationFrame(tick);
       }
     };
 
     const onResize = () => {
-      if (
-        mobilePortrait.matches &&
-        initialized &&
-        Math.abs(window.innerWidth - lastMeasuredWidth) < 2
-      ) {
+      if (mobilePortrait.matches) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+        sequence.style.removeProperty("height");
+        openingTravelRef.current = 0;
+        resetRoleMotion();
+        setWhiteIntroInert(false);
         return;
       }
 
@@ -354,8 +369,6 @@ export function Masthead() {
     }
     restoreAnchorTarget();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("touchmove", scheduleUpdate, { passive: true });
-    window.addEventListener("touchend", scheduleUpdate, { passive: true });
     window.addEventListener("resize", onResize);
     reducedMotion.addEventListener("change", onResize);
     shortLandscape.addEventListener("change", onResize);
@@ -365,8 +378,6 @@ export function Masthead() {
       window.cancelAnimationFrame(frameId);
       timelineResizeObserver.disconnect();
       window.removeEventListener("scroll", scheduleUpdate);
-      window.removeEventListener("touchmove", scheduleUpdate);
-      window.removeEventListener("touchend", scheduleUpdate);
       window.removeEventListener("resize", onResize);
       reducedMotion.removeEventListener("change", onResize);
       shortLandscape.removeEventListener("change", onResize);
@@ -390,6 +401,23 @@ export function Masthead() {
       track.style.transform = "translate3d(-3vw, 0, 0)";
       track.style.willChange = "auto";
       return;
+    }
+
+    // Mobile keeps the marquee on the compositor through CSS. The observer
+    // only pauses it after the hero leaves; no scroll listener or JS frame
+    // loop is installed on portrait phones.
+    if (mobilePortrait.matches) {
+      track.style.removeProperty("transform");
+      const visibilityObserver = new IntersectionObserver(([entry]) => {
+        track.style.animationPlayState = entry.isIntersecting
+          ? "running"
+          : "paused";
+      });
+      visibilityObserver.observe(hero);
+      return () => {
+        visibilityObserver.disconnect();
+        track.style.removeProperty("animation-play-state");
+      };
     }
 
     let frameId = 0;
@@ -463,11 +491,13 @@ export function Masthead() {
     };
 
     const onWheel = (event: WheelEvent) => {
+      if (mobilePortrait.matches) return;
       lastWheelTime = performance.now();
       nudge(event.deltaY);
     };
 
     const onScroll = () => {
+      if (mobilePortrait.matches) return;
       const nextScrollY = window.scrollY;
       const delta = nextScrollY - lastScrollY;
       lastScrollY = nextScrollY;
@@ -529,6 +559,12 @@ export function Masthead() {
     };
 
     const frame = (now: number) => {
+      if (mobilePortrait.matches) {
+        frameId = 0;
+        track.style.removeProperty("transform");
+        return;
+      }
+
       const deltaTime = Math.min(0.05, Math.max(0, (now - lastFrameTime) / 1000));
       lastFrameTime = now;
 
@@ -570,6 +606,21 @@ export function Masthead() {
       frameId = window.requestAnimationFrame(frame);
     };
 
+    const onMobileModeChange = () => {
+      if (mobilePortrait.matches) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+        track.style.removeProperty("transform");
+        showAllNames();
+        return;
+      }
+
+      if (!frameId) {
+        lastFrameTime = performance.now();
+        frameId = window.requestAnimationFrame(frame);
+      }
+    };
+
     const resizeObserver = new ResizeObserver(measure);
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       isVisible = entry.isIntersecting;
@@ -580,6 +631,7 @@ export function Masthead() {
     visibilityObserver.observe(hero);
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
+    mobilePortrait.addEventListener("change", onMobileModeChange);
     frameId = window.requestAnimationFrame(frame);
 
     return () => {
@@ -588,6 +640,7 @@ export function Masthead() {
       visibilityObserver.disconnect();
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("scroll", onScroll);
+      mobilePortrait.removeEventListener("change", onMobileModeChange);
       showAllNames();
     };
   }, []);

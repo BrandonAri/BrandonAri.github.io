@@ -187,6 +187,17 @@ export function TopNav() {
   }, []);
 
   useEffect(() => {
+    const mobilePortrait = window.matchMedia(
+      "(max-width: 620px) and (orientation: portrait)",
+    );
+    let mobileIntroObserver: IntersectionObserver | null = null;
+
+    const applyTone = (nextTone: NavigationTone) => {
+      if (toneRef.current === nextTone) return;
+      toneRef.current = nextTone;
+      setTone(nextTone);
+    };
+
     const updateTone = () => {
       toneFrameRef.current = 0;
       const nav = navRef.current;
@@ -200,16 +211,31 @@ export function TopNav() {
       applyTone(nextTone);
     };
 
-    const applyTone = (nextTone: NavigationTone) => {
-      if (toneRef.current === nextTone) return;
-      toneRef.current = nextTone;
-      setTone(nextTone);
-    };
-
     const scheduleTone = () => {
       if (!toneFrameRef.current) {
         toneFrameRef.current = window.requestAnimationFrame(updateTone);
       }
+    };
+
+    const observeMobileIntroTone = () => {
+      mobileIntroObserver?.disconnect();
+      mobileIntroObserver = null;
+      if (!mobilePortrait.matches) return;
+
+      const nav = navRef.current;
+      const intro = document.querySelector<HTMLElement>(".white-intro");
+      if (!nav || !intro) return;
+      const sampleY = Math.max(34, nav.getBoundingClientRect().bottom);
+      const bottomInset = Math.max(0, window.innerHeight - sampleY - 1);
+
+      mobileIntroObserver = new IntersectionObserver(
+        ([entry]) => applyTone(entry.isIntersecting ? "light" : "dark"),
+        {
+          rootMargin: `-${sampleY}px 0px -${bottomInset}px 0px`,
+          threshold: 0,
+        },
+      );
+      mobileIntroObserver.observe(intro);
     };
 
     const handleThemeProgress = (event: Event) => {
@@ -221,18 +247,27 @@ export function TopNav() {
       scheduleTone();
     };
 
+    const handleResize = () => {
+      observeMobileIntroTone();
+      scheduleTone();
+    };
+
     applyTone("dark");
     updateTone();
+    observeMobileIntroTone();
     window.addEventListener("scroll", scheduleTone, { passive: true });
-    window.addEventListener("resize", scheduleTone);
+    window.addEventListener("resize", handleResize);
     window.addEventListener("pageshow", scheduleTone);
     window.addEventListener("portfolio-theme-progress", handleThemeProgress);
+    mobilePortrait.addEventListener("change", handleResize);
     return () => {
       window.cancelAnimationFrame(toneFrameRef.current);
+      mobileIntroObserver?.disconnect();
       window.removeEventListener("scroll", scheduleTone);
-      window.removeEventListener("resize", scheduleTone);
+      window.removeEventListener("resize", handleResize);
       window.removeEventListener("pageshow", scheduleTone);
       window.removeEventListener("portfolio-theme-progress", handleThemeProgress);
+      mobilePortrait.removeEventListener("change", handleResize);
     };
   }, []);
 

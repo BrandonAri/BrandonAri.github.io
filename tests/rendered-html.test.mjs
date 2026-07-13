@@ -220,7 +220,10 @@ test("reveals Xuze only while the large profile name is hovered or focused", asy
   assert.match(css, /\.profile-name-swap:focus-visible \.profile-name-swap__alternate/);
   assert.match(masthead, /if \(crossProgress > 0\.02\) setWhiteIntroInert\(false\)/);
   assert.match(masthead, /else if \(crossProgress <= 0\) setWhiteIntroInert\(true\)/);
-  assert.doesNotMatch(css, /animation:\s*[^;]*infinite/);
+  assert.doesNotMatch(
+    css,
+    /\.profile-name-swap[^\{]*\{[^}]*animation:/,
+  );
 });
 
 test("orders the opening transition without a dead white interval", async () => {
@@ -360,13 +363,17 @@ test("keeps mobile Safari on the normal document scroller and hardens project sh
   assert.match(css, /html\s*\{[\s\S]*?background:\s*transparent/);
   assert.match(css, /body\s*\{[\s\S]*?background:\s*var\(--canvas\)/);
   assert.match(masthead, /const mobilePortrait = window\.matchMedia/);
-  assert.match(masthead, /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?roleMotionRef\.current = \[\]/);
+  assert.match(
+    masthead,
+    /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?sequence\.style\.removeProperty\("height"\)[\s\S]*?roleMotionRef\.current = \[\][\s\S]*?whiteIntro\.inert = false;[\s\S]*?return;/,
+  );
   assert.doesNotMatch(masthead, /const follow = 1 - Math\.exp|velocityStep|roleLag/);
   assert.match(masthead, /const crossLength = mobilePortrait\.matches\s*\?\s*stageHeight\s*:\s*stageHeight \* 0\.82/);
   assert.match(masthead, /mobilePortrait\.matches \? hero\.clientHeight : stage\.clientHeight/);
-  assert.match(masthead, /window\.addEventListener\("touchmove", scheduleUpdate/);
+  assert.doesNotMatch(masthead, /window\.addEventListener\("touchmove", scheduleUpdate/);
   assert.match(masthead, /const currentOpeningTravel = \(\) =>/);
-  assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
+  assert.match(masthead, /const scheduleUpdate = \(\) => \{\s*if \(mobilePortrait\.matches\) return;/);
+  assert.match(masthead, /const onResize = \(\) => \{\s*if \(mobilePortrait\.matches\)[\s\S]*?setWhiteIntroInert\(false\);[\s\S]*?return;/);
   assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?padding-left:\s*0/);
   assert.match(projects, /className="project-sheet__scroller"/);
   assert.match(projects, /handle\.setPointerCapture\(pointerId\)/);
@@ -474,11 +481,24 @@ test("drives the mobile portrait opening transition with native sticky scrolling
   assert.match(mobileBlock, /body\s*\{[\s\S]*?background:\s*transparent/);
   assert.doesNotMatch(mobileBlock, /html\s*\{[^}]*background:\s*#111215/);
   assert.match(mobileBlock, /\.site-document\s*\{[\s\S]*?overflow-x:\s*clip/);
-  assert.match(mobileBlock, /\.masthead-stage\s*\{[\s\S]*?position:\s*static[\s\S]*?height:\s*100%[\s\S]*?overflow:\s*visible/);
+  assert.match(mobileBlock, /\.masthead-sequence\s*\{[\s\S]*?height:\s*auto !important/);
+  assert.match(mobileBlock, /\.masthead-stage\s*\{[\s\S]*?position:\s*relative[\s\S]*?height:\s*auto[\s\S]*?overflow:\s*visible/);
   assert.match(mobileBlock, /\.hero\s*\{[\s\S]*?position:\s*sticky[\s\S]*?top:\s*0[\s\S]*?transform:\s*none !important/);
-  assert.match(mobileBlock, /\.white-intro\s*\{[\s\S]*?top:\s*auto[\s\S]*?bottom:\s*0[\s\S]*?transform:\s*none !important/);
+  assert.match(mobileBlock, /\.white-intro\s*\{[\s\S]*?position:\s*relative[\s\S]*?margin-top:\s*46svh[\s\S]*?transform:\s*none !important/);
+  assert.match(mobileBlock, /\.white-intro::before\s*\{[\s\S]*?height:\s*46svh[\s\S]*?linear-gradient/);
+  assert.match(mobileBlock, /\.hero__name-track\s*\{[\s\S]*?animation:\s*mobile-name-roll 6\.5s linear infinite/);
+  assert.match(css, /@keyframes mobile-name-roll\s*\{[\s\S]*?translate3d\(-12\.5%, 0, 0\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.hero__name-track\s*\{[\s\S]*?animation:\s*none !important/);
   assert.doesNotMatch(mobileBlock, /--white-intro-panel-y/);
 
-  assert.match(masthead, /const crossLength = mobilePortrait\.matches\s*\?\s*stageHeight\s*:\s*stageHeight \* 0\.82/);
-  assert.match(masthead, /\(mobilePortrait\.matches \? hero\.clientHeight : stage\.clientHeight\)/);
+  assert.match(
+    masthead,
+    /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?sequence\.style\.removeProperty\("height"\)[\s\S]*?whiteIntro\.inert = false;[\s\S]*?return;/,
+  );
+  assert.match(
+    masthead,
+    /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?track\.style\.removeProperty\("transform"\)[\s\S]*?animationPlayState[\s\S]*?visibilityObserver\.observe\(hero\)[\s\S]*?return \(\) =>/,
+  );
+  assert.match(masthead, /const onMobileModeChange = \(\) => \{[\s\S]*?window\.cancelAnimationFrame\(frameId\)[\s\S]*?track\.style\.removeProperty\("transform"\)/);
+  assert.doesNotMatch(masthead, /window\.addEventListener\("touchmove", scheduleUpdate/);
 });

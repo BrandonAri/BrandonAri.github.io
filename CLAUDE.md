@@ -16,9 +16,10 @@ Production: https://brandonaris.com — deployed by GitHub Pages on every push t
    `main` so the fix actually reaches the site, then verify the live site
    (asset hash changes at `assets/index-*.css`). Don't leave validated work
    sitting local — Brandon expects the site to update.
-4. **Don't claim mobile/iOS is fixed from screenshots.** Validate with
-   continuous frame/position sampling (Playwright WebKit) and say plainly that
-   final confirmation needs Brandon's phone.
+4. **Mobile motion is verified on Brandon's real phone.** Do not run a
+   simulator, screen recording, or frame-sampling trace for scroll-motion
+   changes. Run fast code/build checks, deploy, then stop and ask Brandon to
+   test on his iPhone. Do not call an iOS motion bug fixed until he confirms it.
 5. Mobile is served directly again. Do not reintroduce an opaque fixed mobile
    gate or paint the root canvas to imitate Safari's toolbar background.
 6. Never stage/delete/publish `public/media/brandon-portrait-dark.jpeg`
@@ -29,8 +30,9 @@ Production: https://brandonaris.com — deployed by GitHub Pages on every push t
 - `npm test` — full static build (`vinext build` + `scripts/postbuild-static.mjs`)
   then `node --test tests/rendered-html.test.mjs`. Build output: `dist/client`.
 - `npm run lint` — must stay at 0 errors (the 10 `<img>` warnings are known).
-- Local check: `python3 -m http.server 8213 -d dist/client` and drive it with
-  Playwright WebKit (installed in the session scratchpad, not in this repo).
+- Local static server when explicitly needed:
+  `python3 -m http.server 8213 -d dist/client`. Do not use a simulator or
+  frame-tracing workflow for mobile scroll-motion validation.
 
 ## Architecture gotchas (things that already caused bugs)
 
@@ -53,12 +55,12 @@ Production: https://brandonaris.com — deployed by GitHub Pages on every push t
   the masthead measures its real height, so `restoreAnchorTarget()` in
   `app/masthead.tsx` re-anchors once after the first measure.
 - **Masthead opening transition**: desktop = sticky `.masthead-stage` with
-  JS-driven transforms (do not touch). Mobile portrait = native scrolling:
-  static stage spanning the sequence, `position: sticky` hero, white intro at
-  the sequence bottom, JS transforms neutralized by CSS. On mobile,
-  `crossLength` must equal exactly one `stageHeight` and `stageHeight` is
-  measured from `hero.clientHeight`, so the JS timeline (inert release, nav
-  tone) stays 1:1 with the native geometry.
+  JS-driven transforms (do not touch). Mobile portrait = a separate CSS-only,
+  normal-document-scroll composition: sticky hero, normal-flow gradient and
+  white intro, and a compositor CSS marquee. `app/masthead.tsx` must return
+  before installing the desktop timeline observers/listeners or JavaScript
+  marquee frame loop on portrait mobile. Mobile nav tone is detected with an
+  `IntersectionObserver`, not the desktop timeline.
 - **Project sheet** (`app/project-archive.tsx`): keep the opaque light
   `.project-sheet__scroller` and its overscroll protection — it prevents dark
   flashes during iOS overscroll.
@@ -87,3 +89,5 @@ that is this suite's regression style.
 - `backup/2026-07-13-before-safari-root-hover-sheet` — restore point before
   normal mobile-root scrolling, deterministic name hover, and project-sheet
   lock hardening.
+- `backup/2026-07-13-before-mobile-native-motion` — restore point before the
+  portrait-mobile masthead was separated from the desktop JavaScript timeline.
