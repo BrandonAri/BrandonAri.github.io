@@ -52,6 +52,7 @@ export function Masthead() {
   const nameTrackRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLSpanElement>(null);
   const openingTravelRef = useRef(0);
+  const sequenceDocumentTopRef = useRef(0);
   const roleMotionRef = useRef<RoleLineMotion[]>([]);
   const timelineMetricsRef = useRef<TimelineMetrics>({
     backgroundDistance: 1,
@@ -245,6 +246,7 @@ export function Masthead() {
       const stageHeight = stage.clientHeight || window.innerHeight;
       const viewportWidth = window.innerWidth;
       sequenceDocumentTop = window.scrollY + sequence.getBoundingClientRect().top;
+      sequenceDocumentTopRef.current = sequenceDocumentTop;
       lastMeasuredWidth = viewportWidth;
       const unitWidth =
         firstNameRef.current?.getBoundingClientRect().width ??
@@ -256,7 +258,8 @@ export function Masthead() {
         stageHeight * 0.75,
         typicalTailDistance / 1.55,
       );
-      const crossLength = stageHeight * 0.82;
+      const crossLength =
+        stageHeight * (mobilePortrait.matches ? 1.28 : 0.82);
       const exitStart = backgroundLength;
       const exitEnd = exitStart + exitLength;
       const crossStart = exitEnd;
@@ -328,6 +331,8 @@ export function Masthead() {
       renderTimeline(readTravel());
     }
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("touchmove", scheduleUpdate, { passive: true });
+    window.addEventListener("touchend", scheduleUpdate, { passive: true });
     window.addEventListener("resize", onResize);
     reducedMotion.addEventListener("change", onResize);
     shortLandscape.addEventListener("change", onResize);
@@ -337,6 +342,8 @@ export function Masthead() {
       window.cancelAnimationFrame(frameId);
       timelineResizeObserver.disconnect();
       window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("touchmove", scheduleUpdate);
+      window.removeEventListener("touchend", scheduleUpdate);
       window.removeEventListener("resize", onResize);
       reducedMotion.removeEventListener("change", onResize);
       shortLandscape.removeEventListener("change", onResize);
@@ -353,6 +360,9 @@ export function Masthead() {
     const nameSpans = Array.from(track.children) as HTMLSpanElement[];
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobilePortrait = window.matchMedia(
+      "(max-width: 620px) and (orientation: portrait)",
+    );
     if (reducedMotion.matches) {
       track.style.transform = "translate3d(-3vw, 0, 0)";
       track.style.willChange = "auto";
@@ -373,6 +383,15 @@ export function Masthead() {
     let marqueeExiting = false;
     let exitStartPhase = 0;
     let exitEndPhase = 0;
+
+    const currentOpeningTravel = () => {
+      if (!mobilePortrait.matches) return openingTravelRef.current;
+      const totalTravel = Math.max(1, timelineMetricsRef.current.totalTravel);
+      return Math.min(
+        totalTravel,
+        Math.max(0, window.scrollY - sequenceDocumentTopRef.current),
+      );
+    };
 
     const wrapPhase = (value: number) => {
       if (!unitWidth) return value;
@@ -439,7 +458,7 @@ export function Masthead() {
         const exitProgress = linearProgress(
           timelineMetricsRef.current.exitStart,
           timelineMetricsRef.current.exitEnd,
-          openingTravelRef.current,
+          currentOpeningTravel(),
         );
         const widthScale = previousUnitWidth
           ? unitWidth / previousUnitWidth
@@ -491,7 +510,7 @@ export function Masthead() {
       lastFrameTime = now;
 
       if (isVisible && unitWidth) {
-        const travelled = openingTravelRef.current;
+        const travelled = currentOpeningTravel();
         const exitStart = timelineMetricsRef.current.exitStart;
         updateMarqueeSpeed(now, deltaTime);
 
@@ -513,7 +532,7 @@ export function Masthead() {
           const exitProgress = linearProgress(
             timelineMetricsRef.current.exitStart,
             timelineMetricsRef.current.exitEnd,
-            openingTravelRef.current,
+            travelled,
           );
           phase =
             exitStartPhase +

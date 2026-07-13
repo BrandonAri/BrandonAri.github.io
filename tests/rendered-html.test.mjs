@@ -348,10 +348,8 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
       readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     ]);
 
-  assert.doesNotMatch(layout, /viewportFit|data-chrome-tone/);
-  assert.match(layout, /themeColor:\s*"#111215"/);
-  assert.match(layout, /<html lang="en" data-canvas-tone="dark">/);
-  assert.match(layout, /data-canvas-tone="dark"/);
+  assert.match(layout, /viewportFit:\s*"cover"/);
+  assert.doesNotMatch(layout, /themeColor|data-chrome-tone|data-canvas-tone/);
   assert.match(css, /env\(safe-area-inset-top/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*?height:\s*100lvh/);
@@ -360,6 +358,9 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(masthead, /const mobilePortrait = window\.matchMedia/);
   assert.match(masthead, /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?roleMotionRef\.current = \[\]/);
   assert.doesNotMatch(masthead, /const follow = 1 - Math\.exp|velocityStep|roleLag/);
+  assert.match(masthead, /stageHeight \* \(mobilePortrait\.matches \? 1\.28 : 0\.82\)/);
+  assert.match(masthead, /window\.addEventListener\("touchmove", scheduleUpdate/);
+  assert.match(masthead, /const currentOpeningTravel = \(\) =>/);
   assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
   assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?padding-left:\s*0/);
   assert.match(projects, /className="project-sheet__scroller"/);
@@ -367,9 +368,7 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(scrollLock, /body\.style\.position = "fixed"/);
   assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
   assert.match(topNav, /portfolio-theme-progress/);
-  assert.match(topNav, /document\.body\.dataset\.canvasTone = nextTone/);
-  assert.match(topNav, /document\.documentElement\.dataset\.canvasTone = nextTone/);
-  assert.match(topNav, /meta\[name="theme-color"\]/);
+  assert.doesNotMatch(topNav, /canvasTone|theme-color/);
   assert.match(topNav, /data-at-top="true"/);
   assert.match(topNav, /data-surface="false"/);
   assert.match(topNav, /data-visible="true"/);
@@ -378,6 +377,7 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(topNav, /ignoreScrollDirectionUntil = performance\.now\(\) \+ 1200/);
   assert.doesNotMatch(css, /backdrop-filter|glass|conic-gradient/);
   assert.match(css, /\.nav\[data-at-top="true"\] \.nav__brand[\s\S]*?background:\s*transparent/);
+  assert.match(css, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*?\.nav__brand,[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent/);
   assert.match(css, /\.nav\[data-visible="false"\] \.nav__brand[\s\S]*?translate3d\(0, -135%, 0\)/);
   assert.match(css, /\.project-sheet__scroller\s*\{[\s\S]*?overscroll-behavior-y:\s*none[\s\S]*?background:\s*var\(--canvas\)/);
   assert.match(css, /\.orientation-guard\s*\{[\s\S]*?display:\s*none/);
@@ -393,5 +393,5 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
     new URL("../dist/client/index.html", import.meta.url),
     "utf8",
   );
-  assert.doesNotMatch(exportedHome, /viewport-fit=cover/);
+  assert.match(exportedHome, /viewport-fit=cover/);
 });

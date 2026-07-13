@@ -201,19 +201,6 @@ export function TopNav() {
     };
 
     const applyTone = (nextTone: NavigationTone) => {
-      if (document.documentElement.dataset.canvasTone !== nextTone) {
-        document.documentElement.dataset.canvasTone = nextTone;
-      }
-      if (document.body.dataset.canvasTone !== nextTone) {
-        document.body.dataset.canvasTone = nextTone;
-      }
-      const canvasColor = nextTone === "dark" ? "#111215" : "#f3f4f1";
-      const themeColor = document.querySelector<HTMLMetaElement>(
-        'meta[name="theme-color"]',
-      );
-      if (themeColor?.content !== canvasColor) {
-        themeColor?.setAttribute("content", canvasColor);
-      }
       if (toneRef.current === nextTone) return;
       toneRef.current = nextTone;
       setTone(nextTone);

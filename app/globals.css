@@ -33,14 +33,6 @@ html {
   background: transparent;
 }
 
-html[data-canvas-tone="dark"] {
-  background: #111215;
-}
-
-html[data-canvas-tone="light"] {
-  background: var(--canvas);
-}
-
 body {
   min-height: 100dvh;
   margin: 0;
@@ -51,9 +43,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body[data-canvas-tone="dark"] {
-  background: #111215;
-}
 
 .orientation-guard {
   display: none;
@@ -2189,22 +2178,23 @@ video {
   .nav__brand,
   .menu-toggle,
   .nav__links a {
-    border: 1px solid #34373a;
-    background: #17191d;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
   .nav[data-tone="light"] .nav__brand,
   .nav[data-tone="light"] .menu-toggle,
   .nav[data-tone="light"] .nav__links a {
-    border-color: var(--line-strong);
-    background: var(--canvas);
+    border: 0;
+    background: transparent;
   }
 
   .nav__brand,
   .menu-toggle {
     min-height: 2.9rem;
-    border-radius: 4px;
+    border-radius: 0;
     transition:
       color 260ms ease,
       opacity 220ms ease,
@@ -2227,9 +2217,16 @@ video {
 
   .nav[data-at-top="true"] .nav__brand,
   .nav[data-at-top="true"] .menu-toggle {
-    border-color: transparent;
+    border: 0;
     background: transparent;
     box-shadow: none;
+  }
+
+  .nav__links a:hover,
+  .nav__brand:hover,
+  .nav[data-tone="light"] .nav__links a:hover,
+  .nav[data-tone="light"] .nav__brand:hover {
+    background: transparent;
   }
 
   .nav[data-visible="false"] .nav__brand,
@@ -2254,7 +2251,7 @@ video {
 
   .nav__links a {
     min-height: 2.8rem;
-    border-radius: 3px;
+    border-radius: 0;
     transition:
       color 260ms ease,
       opacity 220ms ease,
@@ -2292,7 +2289,6 @@ video {
       max(14px, env(safe-area-inset-left, 0px));
     overflow: visible;
     border: 0;
-    border-bottom: 1px solid var(--line);
     background: var(--canvas);
     box-shadow: none;
   }
@@ -2305,9 +2301,9 @@ video {
   .drag-handle {
     width: 74px;
     height: 38px;
-    border: 1px solid var(--line-strong);
-    border-radius: 999px;
-    background: var(--canvas);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
@@ -2322,9 +2318,9 @@ video {
   .sheet-close {
     min-height: 38px;
     padding: 8px 12px;
-    border: 1px solid var(--line-strong);
-    border-radius: 999px;
-    background: var(--canvas);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     box-shadow: none;
   }
 
