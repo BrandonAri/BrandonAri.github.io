@@ -100,3 +100,5 @@ that is this suite's regression style.
   `7ab6b45`, before adding the opening-screen scroll indicator.
 - `backup/2026-07-13-before-shared-arrow-scroll-cue` — deployed triangular-cue
   version at `aae2d77`, before replacing it with the shared line-arrow design.
+- `backup/2026-07-13-before-scroll-cue-motion-tuning` — shared-arrow cue at
+  `328e5b8`, before thickening its stroke and retuning the breathing motion.

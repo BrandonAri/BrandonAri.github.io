@@ -303,6 +303,15 @@ video {
   background: var(--canvas);
 }
 
+.masthead-scroll-origin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
 .masthead-stage {
   --opening-background: #111215;
   --hero-background-y: 0vh;
@@ -447,6 +456,23 @@ video {
   font-size: clamp(1.9rem, 2.6vw, 2.5rem);
   pointer-events: none;
   mix-blend-mode: difference;
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0);
+  transition:
+    opacity 180ms ease,
+    visibility 0s linear 0s;
+}
+
+.hero__scroll-cue[data-hidden="true"] {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 180ms ease,
+    visibility 0s linear 180ms;
+}
+
+.hero__scroll-cue-motion {
+  display: block;
   transform-origin: 50% 45%;
   animation: scroll-cue-breathe 2.4s ease-in-out infinite;
 }
@@ -456,13 +482,13 @@ video {
 }
 
 .hero__scroll-cue .ui-arrow::before {
-  top: calc(50% - 1px);
-  height: 2px;
+  top: calc(50% - 1.25px);
+  height: 2.5px;
 }
 
 .hero__scroll-cue .ui-arrow::after {
-  border-top-width: 2px;
-  border-right-width: 2px;
+  border-top-width: 2.5px;
+  border-right-width: 2.5px;
 }
 
 .white-intro {
@@ -1704,13 +1730,11 @@ video {
 @keyframes scroll-cue-breathe {
   0%,
   100% {
-    opacity: 0.48;
-    transform: translate3d(-50%, -2px, 0) scale(0.82);
+    transform: translate3d(0, -5px, 0) scale(0.985);
   }
 
   50% {
-    opacity: 1;
-    transform: translate3d(-50%, 3px, 0) scale(1.06);
+    transform: translate3d(0, 6px, 0) scale(1.015);
   }
 }
 

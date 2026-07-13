@@ -51,6 +51,8 @@ export function Masthead() {
   const whiteIntroRef = useRef<HTMLElement>(null);
   const nameTrackRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLSpanElement>(null);
+  const scrollCueRef = useRef<HTMLSpanElement>(null);
+  const scrollOriginRef = useRef<HTMLSpanElement>(null);
   const openingTravelRef = useRef(0);
   const sequenceDocumentTopRef = useRef(0);
   const roleMotionRef = useRef<RoleLineMotion[]>([]);
@@ -645,11 +647,34 @@ export function Masthead() {
     };
   }, []);
 
+  useEffect(() => {
+    const cue = scrollCueRef.current;
+    const origin = scrollOriginRef.current;
+    if (!cue || !origin) return;
+
+    const setHidden = (hidden: boolean) => {
+      cue.dataset.hidden = hidden ? "true" : "false";
+    };
+
+    setHidden(window.scrollY > 1);
+    const observer = new IntersectionObserver(([entry]) => {
+      setHidden(!entry.isIntersecting);
+    });
+    observer.observe(origin);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
       <TopNav />
 
       <div className="masthead-sequence" ref={sequenceRef}>
+        <span
+          className="masthead-scroll-origin"
+          aria-hidden="true"
+          ref={scrollOriginRef}
+        />
         <div className="masthead-stage" ref={stageRef}>
           <section className="hero" aria-labelledby="hero-role-title" ref={heroRef}>
             <div className="hero__background-layer" aria-hidden="true">
@@ -681,8 +706,15 @@ export function Masthead() {
                 </div>
               </div>
 
-              <span className="hero__scroll-cue" aria-hidden="true">
-                <Arrow direction="down" />
+              <span
+                className="hero__scroll-cue"
+                aria-hidden="true"
+                data-hidden="false"
+                ref={scrollCueRef}
+              >
+                <span className="hero__scroll-cue-motion">
+                  <Arrow direction="down" />
+                </span>
               </span>
             </div>
           </section>
