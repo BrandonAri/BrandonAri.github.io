@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from "react";
+import { lockPageScroll } from "./scroll-lock";
 
 type TransitionPhase = "idle" | "covering" | "holding" | "revealing";
 
@@ -55,11 +56,7 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (phase === "idle") return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return lockPageScroll({ restoreScroll: false });
   }, [phase]);
 
   const finishTransitionStage = () => {

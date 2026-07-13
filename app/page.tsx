@@ -1,3 +1,4 @@
+import { Arrow } from "./arrow";
 import { ProjectArchive } from "./project-archive";
 import { Masthead } from "./masthead";
 
@@ -180,12 +181,12 @@ export default function Home() {
             <a href="mailto:xz1919810@gmail.com">
               <span>Personal</span>
               <strong>xz1919810@gmail.com</strong>
-              <i aria-hidden="true">↗</i>
+              <Arrow direction="up-right" />
             </a>
             <a href="mailto:brandon@syntaxis.digital">
               <span>Syntaxis</span>
               <strong>brandon@syntaxis.digital</strong>
-              <i aria-hidden="true">↗</i>
+              <Arrow direction="up-right" />
             </a>
           </div>
         </div>
@@ -206,7 +207,7 @@ export default function Home() {
               Syntaxis Ltd.
             </a>
           </p>
-          <a href="#top">Back to top ↑</a>
+          <a href="#top">Back to top <Arrow direction="up" /></a>
         </div>
       </footer>
     </main>

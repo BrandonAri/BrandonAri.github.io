@@ -6,6 +6,8 @@ import type {
   PointerEvent as ReactPointerEvent,
   TransitionEvent as ReactTransitionEvent,
 } from "react";
+import { Arrow } from "./arrow";
+import { lockPageScroll } from "./scroll-lock";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const media = `${basePath}/media`;
@@ -64,7 +66,9 @@ export function ProjectArchive() {
     setDragging(false);
     setSheetPhase("opening");
     draggingRef.current = false;
-    window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+    window.requestAnimationFrame(() =>
+      lastTriggerRef.current?.focus({ preventScroll: true }),
+    );
   };
 
   const closeProject = () => {
@@ -84,9 +88,8 @@ export function ProjectArchive() {
   useEffect(() => {
     if (!activeProject) return;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
+    const unlockPageScroll = lockPageScroll();
+    closeButtonRef.current?.focus({ preventScroll: true });
     let settleFrame = 0;
     const openingFrame = window.requestAnimationFrame(() => {
       settleFrame = window.requestAnimationFrame(() => {
@@ -102,7 +105,7 @@ export function ProjectArchive() {
     return () => {
       window.cancelAnimationFrame(openingFrame);
       window.cancelAnimationFrame(settleFrame);
-      document.body.style.overflow = previousOverflow;
+      unlockPageScroll();
       window.removeEventListener("keydown", handleKey);
     };
   }, [activeProject]);
@@ -218,7 +221,7 @@ export function ProjectArchive() {
                 <p>{project.discipline}</p>
                 <h3>{project.title}</h3>
                 <span>{project.summary}</span>
-                <strong>Open project <i aria-hidden="true">↗</i></strong>
+                <strong>Open project <Arrow direction="up-right" /></strong>
               </div>
             </button>
           ))}
@@ -241,26 +244,28 @@ export function ProjectArchive() {
             onTransitionEnd={finishCloseOnTransition}
             style={{ "--sheet-drag-y": `${dragOffset}px` } as CSSProperties}
           >
-            <div className="sheet-controls">
-              <button
-                className="drag-handle"
-                type="button"
-                onPointerDown={beginDrag}
-                aria-label="Drag down to close project"
-              >
-                <span />
-              </button>
-              <button
-                className="sheet-close"
-                type="button"
-                onClick={closeProject}
-                ref={closeButtonRef}
-              >
-                Close <span aria-hidden="true">×</span>
-              </button>
-            </div>
+            <div className="project-sheet__scroller">
+              <div className="sheet-controls">
+                <button
+                  className="drag-handle"
+                  type="button"
+                  onPointerDown={beginDrag}
+                  aria-label="Drag down to close project"
+                >
+                  <span />
+                </button>
+                <button
+                  className="sheet-close"
+                  type="button"
+                  onClick={closeProject}
+                  ref={closeButtonRef}
+                >
+                  Close <span aria-hidden="true">×</span>
+                </button>
+              </div>
 
-            {activeProject === "heater" ? <HeaterProject /> : <VehicleProject />}
+              {activeProject === "heater" ? <HeaterProject /> : <VehicleProject />}
+            </div>
           </article>
         </div>
       ) : null}
@@ -278,7 +283,7 @@ function ProjectFlow({ steps }: { steps: { title: string; detail: string }[] }) 
             <strong>{step.title}</strong>
             <small>{step.detail}</small>
           </div>
-          {index < steps.length - 1 ? <i aria-hidden="true">→</i> : null}
+          {index < steps.length - 1 ? <Arrow direction="right" /> : null}
         </div>
       ))}
     </div>
