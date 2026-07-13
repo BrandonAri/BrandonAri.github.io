@@ -161,7 +161,8 @@ test("copies only the referenced top bar and rolling-name banner", async () => {
   assert.match(masthead, /PM\./);
   assert.match(masthead, /portrait-light-scan\.jpeg/);
   assert.doesNotMatch(css, /\.nav\s*\{[^}]*mix-blend-mode:/);
-  assert.match(css, /\.nav__bar\s*\{[\s\S]*?-webkit-backdrop-filter:\s*blur\(19px\)/);
+  assert.doesNotMatch(css, /backdrop-filter|glass/);
+  assert.match(css, /\.nav__brand,\s*\.menu-toggle\s*\{[\s\S]*?background:\s*#17191d/);
   assert.doesNotMatch(css, /\.nav__dot/);
   assert.match(css, /\.hero,\s*\.white-intro\s*\{[\s\S]*?min-height:\s*100svh/);
   assert.doesNotMatch(css, /min-height:\s*(?:108|115)svh/);
@@ -237,15 +238,15 @@ test("orders the opening transition without a dead white interval", async () => 
   assert.match(masthead, /const backgroundProgress = linearProgress\([\s\S]*?metrics\.backgroundEnd,[\s\S]*?travelled/);
   assert.match(masthead, /const crossProgress = linearProgress\([\s\S]*?metrics\.crossStart,[\s\S]*?metrics\.crossEnd/);
   assert.match(masthead, /const roleProgress = linearProgress\([\s\S]*?metrics\.roleStart,[\s\S]*?metrics\.roleEnd/);
-  assert.match(masthead, /const roleLag = mobilePortrait\.matches[\s\S]*?\? 0[\s\S]*?: Math\.max\([\s\S]*?-metrics\.stageHeight \* 0\.1,[\s\S]*?displayVelocity \* 0\.035/);
-  assert.match(masthead, /travelled - roleLag/);
+  assert.doesNotMatch(masthead, /roleLag|displayVelocity/);
+  assert.match(masthead, /metrics\.roleEnd,[\s\S]*?travelled/);
   assert.match(masthead, /roleEnd: backgroundLength/);
   assert.match(masthead, /roleStart: 0/);
   assert.match(masthead, /applyRoleMotion\(roleProgress\)/);
   assert.match(masthead, /aria-label="Hardware engineer\. App developer\. PM\."/);
   assert.match(masthead, /mixRgb\(\[17, 18, 21\], \[243, 244, 241\], backgroundProgress\)/);
   assert.match(masthead, /mixRgb\(\[243, 238, 229\], \[23, 26, 25\], backgroundProgress\)/);
-  assert.match(masthead, /whiteIntro\.inert = crossProgress < 0\.995/);
+  assert.match(masthead, /setWhiteIntroInert\(crossProgress < 0\.995\)/);
   assert.match(masthead, /const crossStart = exitEnd/);
   assert.match(masthead, /const crossEnd = crossStart \+ crossLength/);
   assert.match(masthead, /--hero-frame-y/);
@@ -320,23 +321,20 @@ test("keeps the rolling name moving at idle and reverses with scroll direction",
   assert.match(css, /@media \(max-width: 980px\)[\s\S]*?\.menu-toggle[\s\S]*?display:\s*grid/);
 });
 
-test("uses velocity-aware critical damping for consistent scroll resistance", async () => {
+test("keeps the opening transition directly synchronized to scroll in both directions", async () => {
   const masthead = await readFile(
     new URL("../app/masthead.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(masthead, /const rawVelocitySample = \(targetTravel - previousTarget\) \/ deltaTime/);
-  assert.match(masthead, /56 \+ absoluteRawVelocity \* 0\.13/);
-  assert.match(masthead, /metrics\.stageHeight \* 0\.18/);
-  assert.match(masthead, /const decay = Math\.exp\(-omega \* deltaTime\)/);
-  assert.match(masthead, /displayTravel =\s*targetTravel \+ \(delta \+ velocityStep\) \* decay/);
+  assert.match(masthead, /const rawTravel = window\.scrollY - sequenceDocumentTop/);
+  assert.match(masthead, /renderTimeline\(readTravel\(\)\)/);
   assert.match(masthead, /openingTravelRef\.current = travelled/);
-  assert.match(masthead, /openingVelocityRef\.current = displayVelocity/);
-  assert.match(masthead, /Math\.abs\(targetTravel - displayTravel\) >= 0\.12/);
+  assert.match(masthead, /const totalTravel = crossEnd/);
+  assert.doesNotMatch(masthead, /holdLength|displayTravel|velocityStep|const decay/);
 });
 
-test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async () => {
+test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", async () => {
   const [layout, masthead, projects, page, about, topNav, scrollLock, arrow, css] =
     await Promise.all([
       readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -350,16 +348,17 @@ test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async (
       readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     ]);
 
-  assert.match(layout, /viewportFit:\s*"cover"/);
+  assert.doesNotMatch(layout, /viewportFit|data-chrome-tone/);
   assert.match(layout, /themeColor:\s*"#111215"/);
-  assert.match(layout, /data-chrome-tone="dark"/);
+  assert.match(layout, /data-canvas-tone="dark"/);
   assert.match(css, /env\(safe-area-inset-top/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*?height:\s*100lvh/);
-  assert.match(css, /html\[data-chrome-tone="dark"\][\s\S]*?color-scheme:\s*dark/);
+  assert.match(css, /html\s*\{[\s\S]*?background:\s*transparent/);
+  assert.match(css, /body\s*\{[\s\S]*?background:\s*var\(--canvas\)/);
   assert.match(masthead, /const mobilePortrait = window\.matchMedia/);
   assert.match(masthead, /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?roleMotionRef\.current = \[\]/);
-  assert.match(masthead, /mobilePortrait\.matches[\s\S]*?const follow = 1 - Math\.exp\(-10 \* deltaTime\)/);
+  assert.doesNotMatch(masthead, /const follow = 1 - Math\.exp|velocityStep|roleLag/);
   assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
   assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?padding-left:\s*0/);
   assert.match(projects, /className="project-sheet__scroller"/);
@@ -367,20 +366,21 @@ test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async (
   assert.match(scrollLock, /body\.style\.position = "fixed"/);
   assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
   assert.match(topNav, /portfolio-theme-progress/);
+  assert.match(topNav, /document\.body\.dataset\.canvasTone = nextTone/);
+  assert.match(topNav, /meta\[name="theme-color"\]/);
   assert.match(topNav, /data-at-top="true"/);
   assert.match(topNav, /data-surface="false"/);
   assert.match(topNav, /data-visible="true"/);
   assert.match(topNav, /directionalTravel > 18/);
   assert.match(topNav, /window\.addEventListener\("touchmove", onTouchMove/);
   assert.match(topNav, /ignoreScrollDirectionUntil = performance\.now\(\) \+ 1200/);
-  assert.match(css, /conic-gradient\([\s\S]*?rgba\(105, 226, 255, 0\.92\)/);
-  assert.match(css, /@keyframes mobile-glass-glint/);
-  assert.match(css, /\.nav\[data-at-top="true"\] \.nav__brand[\s\S]*?-webkit-backdrop-filter:\s*none/);
+  assert.doesNotMatch(css, /backdrop-filter|glass|conic-gradient/);
+  assert.match(css, /\.nav\[data-at-top="true"\] \.nav__brand[\s\S]*?background:\s*transparent/);
   assert.match(css, /\.nav\[data-visible="false"\] \.nav__brand[\s\S]*?translate3d\(0, -135%, 0\)/);
+  assert.match(css, /\.project-sheet__scroller\s*\{[\s\S]*?overscroll-behavior-y:\s*none[\s\S]*?background:\s*var\(--canvas\)/);
   assert.match(css, /\.orientation-guard\s*\{[\s\S]*?display:\s*none/);
   assert.match(css, /\(orientation: landscape\)[\s\S]*?\(pointer: coarse\)[\s\S]*?\.orientation-guard/);
   assert.match(layout, /Rotate your phone upright\./);
-  assert.match(css, /prefers-reduced-transparency/);
   assert.match(arrow, /ui-arrow--\$\{direction\}/);
   assert.doesNotMatch(
     [masthead, projects, page, about].join("\n"),
@@ -391,5 +391,5 @@ test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async (
     new URL("../dist/client/index.html", import.meta.url),
     "utf8",
   );
-  assert.match(exportedHome, /viewport-fit=cover/);
+  assert.doesNotMatch(exportedHome, /viewport-fit=cover/);
 });

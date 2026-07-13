@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
 import { TransitionLink } from "./page-transition";
 
 type NavigationTone = "dark" | "light";
@@ -22,19 +21,6 @@ const surfaceTone = (sampleY: number): NavigationTone => {
     if (bounds.top <= sampleY && bounds.bottom > sampleY) return tone;
   }
 
-  const stage = document.querySelector<HTMLElement>(".masthead-stage");
-  if (stage) {
-    const bounds = stage.getBoundingClientRect();
-    if (bounds.top <= sampleY && bounds.bottom > sampleY) {
-      const channels = getComputedStyle(stage).backgroundColor.match(/[\d.]+/g);
-      if (channels && channels.length >= 3) {
-        const [red, green, blue] = channels.map(Number);
-        const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-        return luminance > 150 ? "light" : "dark";
-      }
-    }
-  }
-
   return "dark";
 };
 
@@ -43,10 +29,7 @@ export function TopNav() {
   const [tone, setTone] = useState<NavigationTone>("dark");
   const toneRef = useRef<NavigationTone>("dark");
   const navRef = useRef<HTMLElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const glassFrameRef = useRef(0);
   const toneFrameRef = useRef(0);
-  const pulseTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const nav = navRef.current;
@@ -208,11 +191,8 @@ export function TopNav() {
       toneFrameRef.current = 0;
       const nav = navRef.current;
       const sampleY = Math.max(34, nav?.getBoundingClientRect().bottom ?? 70);
-      const mobilePortrait = window.matchMedia(
-        "(max-width: 620px) and (orientation: portrait)",
-      );
       const stage = document.querySelector<HTMLElement>(".masthead-stage");
-      if (mobilePortrait.matches && stage) {
+      if (stage) {
         const bounds = stage.getBoundingClientRect();
         if (bounds.top <= sampleY && bounds.bottom > sampleY) return;
       }
@@ -221,10 +201,16 @@ export function TopNav() {
     };
 
     const applyTone = (nextTone: NavigationTone) => {
-      const color = nextTone === "dark" ? "#111215" : "#f3f4f1";
-      document.documentElement.dataset.chromeTone = nextTone;
-      const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-      if (meta?.content !== color) meta?.setAttribute("content", color);
+      if (document.body.dataset.canvasTone !== nextTone) {
+        document.body.dataset.canvasTone = nextTone;
+      }
+      const canvasColor = nextTone === "dark" ? "#111215" : "#f3f4f1";
+      const themeColor = document.querySelector<HTMLMetaElement>(
+        'meta[name="theme-color"]',
+      );
+      if (themeColor?.content !== canvasColor) {
+        themeColor?.setAttribute("content", canvasColor);
+      }
       if (toneRef.current === nextTone) return;
       toneRef.current = nextTone;
       setTone(nextTone);
@@ -237,11 +223,8 @@ export function TopNav() {
     };
 
     const handleThemeProgress = (event: Event) => {
-      const mobilePortrait = window.matchMedia(
-        "(max-width: 620px) and (orientation: portrait)",
-      );
       const detail = (event as CustomEvent<{ tone?: NavigationTone }>).detail;
-      if (mobilePortrait.matches && detail?.tone) {
+      if (detail?.tone) {
         applyTone(detail.tone);
         return;
       }
@@ -263,38 +246,6 @@ export function TopNav() {
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      window.cancelAnimationFrame(glassFrameRef.current);
-      if (pulseTimerRef.current !== null) window.clearTimeout(pulseTimerRef.current);
-    };
-  }, []);
-
-  const moveGlassHighlight = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-    const bar = barRef.current;
-    if (!bar) return;
-    const { clientX, clientY } = event;
-    window.cancelAnimationFrame(glassFrameRef.current);
-    glassFrameRef.current = window.requestAnimationFrame(() => {
-      const bounds = bar.getBoundingClientRect();
-      bar.style.setProperty("--glass-x", `${clientX - bounds.left}px`);
-      bar.style.setProperty("--glass-y", `${clientY - bounds.top}px`);
-    });
-  };
-
-  const pulseGlass = () => {
-    const bar = barRef.current;
-    if (!bar) return;
-    bar.classList.remove("is-glass-active");
-    window.requestAnimationFrame(() => bar.classList.add("is-glass-active"));
-    if (pulseTimerRef.current !== null) window.clearTimeout(pulseTimerRef.current);
-    pulseTimerRef.current = window.setTimeout(
-      () => bar.classList.remove("is-glass-active"),
-      560,
-    );
-  };
-
   const closeMenu = () => setMenuOpen(false);
 
   return (
@@ -306,12 +257,7 @@ export function TopNav() {
       data-visible="true"
       ref={navRef}
     >
-      <div
-        className="nav__bar"
-        ref={barRef}
-        onPointerMove={moveGlassHighlight}
-        onPointerDown={pulseGlass}
-      >
+      <div className="nav__bar">
         <TransitionLink
           className="nav__brand masthead-magnetic"
           href="/#top"

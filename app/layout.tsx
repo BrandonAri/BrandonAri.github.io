@@ -42,7 +42,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
   themeColor: "#111215",
 };
 
@@ -52,8 +51,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-chrome-tone="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable}`}
+        data-canvas-tone="dark"
+      >
         <PageTransitionProvider>{children}</PageTransitionProvider>
         <div className="orientation-guard" role="status">
           <span>Portrait view only</span>

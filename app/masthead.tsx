@@ -52,7 +52,6 @@ export function Masthead() {
   const nameTrackRef = useRef<HTMLDivElement>(null);
   const firstNameRef = useRef<HTMLSpanElement>(null);
   const openingTravelRef = useRef(0);
-  const openingVelocityRef = useRef(0);
   const roleMotionRef = useRef<RoleLineMotion[]>([]);
   const timelineMetricsRef = useRef<TimelineMetrics>({
     backgroundDistance: 1,
@@ -83,15 +82,10 @@ export function Masthead() {
       "(max-width: 620px) and (orientation: portrait)",
     );
     let frameId = 0;
-    let displayTravel = 0;
-    let displayVelocity = 0;
-    let filteredRawVelocity = 0;
-    let previousTarget = 0;
-    let lastFrameTime = performance.now();
     let initialized = false;
     let lastMeasuredWidth = window.innerWidth;
     let sequenceDocumentTop = 0;
-    let lastMobileTone: "dark" | "light" | null = null;
+    let lastTimelineTone: "dark" | "light" | null = null;
 
     const isStaticLayout = () =>
       reducedMotion.matches || shortLandscape.matches;
@@ -170,19 +164,20 @@ export function Masthead() {
 
     const readTravel = () => {
       const totalTravel = Math.max(1, timelineMetricsRef.current.totalTravel);
-      const rawTravel = mobilePortrait.matches
-        ? window.scrollY - sequenceDocumentTop
-        : -sequence.getBoundingClientRect().top;
+      const rawTravel = window.scrollY - sequenceDocumentTop;
       return Math.min(
         totalTravel,
         Math.max(0, rawTravel),
       );
     };
 
+    const setWhiteIntroInert = (nextInert: boolean) => {
+      if (whiteIntro.inert !== nextInert) whiteIntro.inert = nextInert;
+    };
+
     const renderTimeline = (travelled: number) => {
       const metrics = timelineMetricsRef.current;
       openingTravelRef.current = travelled;
-      openingVelocityRef.current = displayVelocity;
 
       const backgroundProgress = linearProgress(
         0,
@@ -194,16 +189,10 @@ export function Masthead() {
         metrics.crossEnd,
         travelled,
       );
-      const roleLag = mobilePortrait.matches
-        ? 0
-        : Math.max(
-            -metrics.stageHeight * 0.1,
-            Math.min(metrics.stageHeight * 0.1, displayVelocity * 0.035),
-          );
       const roleProgress = linearProgress(
         metrics.roleStart,
         metrics.roleEnd,
-        travelled - roleLag,
+        travelled,
       );
 
       stage.style.setProperty(
@@ -231,20 +220,16 @@ export function Masthead() {
         `${(1 - crossProgress) * metrics.stageHeight}px`,
       );
       applyRoleMotion(roleProgress);
-      whiteIntro.inert = crossProgress < 0.995;
+      setWhiteIntroInert(crossProgress < 0.995);
 
-      if (mobilePortrait.matches) {
-        const mobileTone = backgroundProgress >= 0.56 ? "light" : "dark";
-        if (mobileTone !== lastMobileTone) {
-          lastMobileTone = mobileTone;
-          window.dispatchEvent(
-            new CustomEvent("portfolio-theme-progress", {
-              detail: { tone: mobileTone },
-            }),
-          );
-        }
-      } else {
-        window.dispatchEvent(new Event("portfolio-theme-progress"));
+      const timelineTone = backgroundProgress >= 0.56 ? "light" : "dark";
+      if (timelineTone !== lastTimelineTone) {
+        lastTimelineTone = timelineTone;
+        window.dispatchEvent(
+          new CustomEvent("portfolio-theme-progress", {
+            detail: { tone: timelineTone },
+          }),
+        );
       }
     };
 
@@ -252,13 +237,11 @@ export function Masthead() {
       if (isStaticLayout()) {
         sequence.style.height = "";
         openingTravelRef.current = 0;
-        openingVelocityRef.current = 0;
         resetRoleMotion();
-        whiteIntro.inert = false;
+        setWhiteIntroInert(false);
         return false;
       }
 
-      const oldMetrics = timelineMetricsRef.current;
       const stageHeight = stage.clientHeight || window.innerHeight;
       const viewportWidth = window.innerWidth;
       sequenceDocumentTop = window.scrollY + sequence.getBoundingClientRect().top;
@@ -274,12 +257,11 @@ export function Masthead() {
         typicalTailDistance / 1.55,
       );
       const crossLength = stageHeight * 0.82;
-      const holdLength = stageHeight * 0.18;
       const exitStart = backgroundLength;
       const exitEnd = exitStart + exitLength;
       const crossStart = exitEnd;
       const crossEnd = crossStart + crossLength;
-      const totalTravel = crossEnd + holdLength;
+      const totalTravel = crossEnd;
 
       timelineMetricsRef.current = {
         backgroundDistance: stageHeight * 0.2,
@@ -295,104 +277,23 @@ export function Masthead() {
       };
       sequence.style.height = `${totalTravel + stageHeight}px`;
       measureRoleMotion();
-
-      if (initialized && oldMetrics.totalTravel > 0) {
-        const scale = totalTravel / oldMetrics.totalTravel;
-        displayTravel = Math.min(totalTravel, displayTravel * scale);
-        displayVelocity *= scale;
-      }
-
-      previousTarget = readTravel();
-      filteredRawVelocity = 0;
       return true;
     };
 
-    const tick = (now: number) => {
+    const tick = () => {
       frameId = 0;
 
       if (isStaticLayout()) {
         openingTravelRef.current = 0;
-        openingVelocityRef.current = 0;
-        whiteIntro.inert = false;
+        setWhiteIntroInert(false);
         return;
       }
 
-      const metrics = timelineMetricsRef.current;
-      const deltaTime = Math.min(
-        1 / 30,
-        Math.max(1 / 240, (now - lastFrameTime) / 1000),
-      );
-      lastFrameTime = now;
-
-      const targetTravel = readTravel();
-      const rawVelocitySample = (targetTravel - previousTarget) / deltaTime;
-      filteredRawVelocity +=
-        (rawVelocitySample - filteredRawVelocity) *
-        (1 - Math.exp(-12 * deltaTime));
-      previousTarget = targetTravel;
-
-      const absoluteRawVelocity = Math.abs(filteredRawVelocity);
-      const desiredLag = Math.min(
-        metrics.stageHeight * 0.18,
-        56 + absoluteRawVelocity * 0.13,
-      );
-      const omega =
-        absoluteRawVelocity < 1
-          ? 6
-          : Math.min(
-              14,
-              Math.max(6, (2 * absoluteRawVelocity) / desiredLag),
-            );
-      if (mobilePortrait.matches) {
-        const previousDisplay = displayTravel;
-        const follow = 1 - Math.exp(-10 * deltaTime);
-        displayTravel += (targetTravel - displayTravel) * follow;
-        displayVelocity = (displayTravel - previousDisplay) / deltaTime;
-      } else {
-        const delta = displayTravel - targetTravel;
-        const decay = Math.exp(-omega * deltaTime);
-        const velocityStep = (displayVelocity + omega * delta) * deltaTime;
-        displayTravel = targetTravel + (delta + velocityStep) * decay;
-        displayVelocity = (displayVelocity - omega * velocityStep) * decay;
-      }
-
-      displayTravel = Math.min(
-        metrics.totalTravel,
-        Math.max(0, displayTravel),
-      );
-
-      if (
-        (displayTravel <= 0 && displayVelocity < 0) ||
-        (displayTravel >= metrics.totalTravel && displayVelocity > 0)
-      ) {
-        displayVelocity = 0;
-      }
-
-      const travelGap = targetTravel - displayTravel;
-      if (
-        Math.abs(travelGap) < 0.12 &&
-        Math.abs(displayVelocity) < 0.12 &&
-        Math.abs(filteredRawVelocity) < 0.5
-      ) {
-        displayTravel = targetTravel;
-        displayVelocity = 0;
-        filteredRawVelocity = 0;
-      }
-
-      renderTimeline(displayTravel);
-
-      if (
-        Math.abs(targetTravel - displayTravel) >= 0.12 ||
-        Math.abs(displayVelocity) >= 0.12 ||
-        Math.abs(filteredRawVelocity) >= 0.5
-      ) {
-        frameId = window.requestAnimationFrame(tick);
-      }
+      renderTimeline(readTravel());
     };
 
     const scheduleUpdate = () => {
       if (!frameId) {
-        lastFrameTime = performance.now();
         frameId = window.requestAnimationFrame(tick);
       }
     };
@@ -408,10 +309,7 @@ export function Masthead() {
 
       if (measureTimeline()) {
         if (!initialized) {
-          displayTravel = readTravel();
-          previousTarget = displayTravel;
           initialized = true;
-          renderTimeline(displayTravel);
         }
         scheduleUpdate();
       } else {
@@ -426,10 +324,8 @@ export function Masthead() {
     roleLines.forEach((line) => timelineResizeObserver.observe(line));
 
     if (measureTimeline()) {
-      displayTravel = readTravel();
-      previousTarget = displayTravel;
       initialized = true;
-      renderTimeline(displayTravel);
+      renderTimeline(readTravel());
     }
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", onResize);
