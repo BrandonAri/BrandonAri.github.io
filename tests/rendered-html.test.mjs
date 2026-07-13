@@ -237,7 +237,7 @@ test("orders the opening transition without a dead white interval", async () => 
   assert.match(masthead, /const backgroundProgress = linearProgress\([\s\S]*?metrics\.backgroundEnd,[\s\S]*?travelled/);
   assert.match(masthead, /const crossProgress = linearProgress\([\s\S]*?metrics\.crossStart,[\s\S]*?metrics\.crossEnd/);
   assert.match(masthead, /const roleProgress = linearProgress\([\s\S]*?metrics\.roleStart,[\s\S]*?metrics\.roleEnd/);
-  assert.match(masthead, /const roleLag = Math\.max\([\s\S]*?-metrics\.stageHeight \* 0\.1,[\s\S]*?displayVelocity \* 0\.035/);
+  assert.match(masthead, /const roleLag = mobilePortrait\.matches[\s\S]*?\? 0[\s\S]*?: Math\.max\([\s\S]*?-metrics\.stageHeight \* 0\.1,[\s\S]*?displayVelocity \* 0\.035/);
   assert.match(masthead, /travelled - roleLag/);
   assert.match(masthead, /roleEnd: backgroundLength/);
   assert.match(masthead, /roleStart: 0/);
@@ -352,18 +352,34 @@ test("hardens the mobile Safari layout, glass, scroll lock, and arrows", async (
 
   assert.match(layout, /viewportFit:\s*"cover"/);
   assert.match(layout, /themeColor:\s*"#111215"/);
+  assert.match(layout, /data-chrome-tone="dark"/);
   assert.match(css, /env\(safe-area-inset-top/);
   assert.match(css, /env\(safe-area-inset-bottom/);
-  assert.match(css, /height:\s*100dvh/);
-  assert.match(masthead, /if \(hero\.clientWidth <= 620\)/);
-  assert.match(masthead, /targetScale:\s*1/);
-  assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?display:\s*block/);
+  assert.match(css, /@media \(max-width: 620px\) and \(orientation: portrait\)[\s\S]*?height:\s*100lvh/);
+  assert.match(css, /html\[data-chrome-tone="dark"\][\s\S]*?color-scheme:\s*dark/);
+  assert.match(masthead, /const mobilePortrait = window\.matchMedia/);
+  assert.match(masthead, /if \(mobilePortrait\.matches\)\s*\{[\s\S]*?roleMotionRef\.current = \[\]/);
+  assert.match(masthead, /mobilePortrait\.matches[\s\S]*?const follow = 1 - Math\.exp\(-10 \* deltaTime\)/);
+  assert.match(masthead, /Math\.abs\(window\.innerWidth - lastMeasuredWidth\) < 2/);
+  assert.match(css, /\.profile-name-swap > span:last-child\s*\{[\s\S]*?padding-left:\s*0/);
   assert.match(projects, /className="project-sheet__scroller"/);
   assert.match(scrollLock, /let lockCount = 0/);
   assert.match(scrollLock, /body\.style\.position = "fixed"/);
   assert.match(scrollLock, /lockCount = Math\.max\(0, lockCount - 1\)/);
   assert.match(topNav, /portfolio-theme-progress/);
-  assert.match(css, /sheet-glass-sweep/);
+  assert.match(topNav, /data-at-top="true"/);
+  assert.match(topNav, /data-surface="false"/);
+  assert.match(topNav, /data-visible="true"/);
+  assert.match(topNav, /directionalTravel > 18/);
+  assert.match(topNav, /window\.addEventListener\("touchmove", onTouchMove/);
+  assert.match(topNav, /ignoreScrollDirectionUntil = performance\.now\(\) \+ 1200/);
+  assert.match(css, /conic-gradient\([\s\S]*?rgba\(105, 226, 255, 0\.92\)/);
+  assert.match(css, /@keyframes mobile-glass-glint/);
+  assert.match(css, /\.nav\[data-at-top="true"\] \.nav__brand[\s\S]*?-webkit-backdrop-filter:\s*none/);
+  assert.match(css, /\.nav\[data-visible="false"\] \.nav__brand[\s\S]*?translate3d\(0, -135%, 0\)/);
+  assert.match(css, /\.orientation-guard\s*\{[\s\S]*?display:\s*none/);
+  assert.match(css, /\(orientation: landscape\)[\s\S]*?\(pointer: coarse\)[\s\S]*?\.orientation-guard/);
+  assert.match(layout, /Rotate your phone upright\./);
   assert.match(css, /prefers-reduced-transparency/);
   assert.match(arrow, /ui-arrow--\$\{direction\}/);
   assert.doesNotMatch(
