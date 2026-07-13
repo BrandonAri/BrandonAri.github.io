@@ -52,9 +52,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-chrome-tone="dark">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <PageTransitionProvider>{children}</PageTransitionProvider>
+        <div className="orientation-guard" role="status">
+          <span>Portrait view only</span>
+          <strong>Rotate your phone upright.</strong>
+        </div>
       </body>
     </html>
   );

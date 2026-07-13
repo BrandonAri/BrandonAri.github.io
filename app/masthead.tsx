@@ -79,6 +79,9 @@ export function Masthead() {
     const shortLandscape = window.matchMedia(
       "(max-height: 620px) and (orientation: landscape)",
     );
+    const mobilePortrait = window.matchMedia(
+      "(max-width: 620px) and (orientation: portrait)",
+    );
     let frameId = 0;
     let displayTravel = 0;
     let displayVelocity = 0;
@@ -86,6 +89,9 @@ export function Masthead() {
     let previousTarget = 0;
     let lastFrameTime = performance.now();
     let initialized = false;
+    let lastMeasuredWidth = window.innerWidth;
+    let sequenceDocumentTop = 0;
+    let lastMobileTone: "dark" | "light" | null = null;
 
     const isStaticLayout = () =>
       reducedMotion.matches || shortLandscape.matches;
@@ -108,26 +114,8 @@ export function Masthead() {
       const gap = Math.min(22, Math.max(6, hero.clientWidth * 0.012));
       const availableWidth = Math.max(1, hero.clientWidth - sideInset * 2);
 
-      if (hero.clientWidth <= 620) {
-        const mobileGap = Math.min(12, Math.max(5, hero.clientWidth * 0.018));
-        const targetHeight =
-          lineBounds.reduce((total, bounds) => total + bounds.height, 0) +
-          mobileGap * Math.max(0, lineBounds.length - 1);
-        let targetTop = (hero.clientHeight - targetHeight) / 2;
-
-        roleMotionRef.current = roleLines.map((element, index) => {
-          const bounds = lineBounds[index];
-          const motion = {
-            element,
-            startLeft: bounds.left - heroBounds.left,
-            startTop: bounds.top - heroBounds.top,
-            targetLeft: (hero.clientWidth - bounds.width) / 2,
-            targetScale: 1,
-            targetTop,
-          };
-          targetTop += bounds.height + mobileGap;
-          return motion;
-        });
+      if (mobilePortrait.matches) {
+        roleMotionRef.current = [];
         return;
       }
 
@@ -182,9 +170,12 @@ export function Masthead() {
 
     const readTravel = () => {
       const totalTravel = Math.max(1, timelineMetricsRef.current.totalTravel);
+      const rawTravel = mobilePortrait.matches
+        ? window.scrollY - sequenceDocumentTop
+        : -sequence.getBoundingClientRect().top;
       return Math.min(
         totalTravel,
-        Math.max(0, -sequence.getBoundingClientRect().top),
+        Math.max(0, rawTravel),
       );
     };
 
@@ -203,10 +194,12 @@ export function Masthead() {
         metrics.crossEnd,
         travelled,
       );
-      const roleLag = Math.max(
-        -metrics.stageHeight * 0.1,
-        Math.min(metrics.stageHeight * 0.1, displayVelocity * 0.035),
-      );
+      const roleLag = mobilePortrait.matches
+        ? 0
+        : Math.max(
+            -metrics.stageHeight * 0.1,
+            Math.min(metrics.stageHeight * 0.1, displayVelocity * 0.035),
+          );
       const roleProgress = linearProgress(
         metrics.roleStart,
         metrics.roleEnd,
@@ -239,7 +232,20 @@ export function Masthead() {
       );
       applyRoleMotion(roleProgress);
       whiteIntro.inert = crossProgress < 0.995;
-      window.dispatchEvent(new Event("portfolio-theme-progress"));
+
+      if (mobilePortrait.matches) {
+        const mobileTone = backgroundProgress >= 0.56 ? "light" : "dark";
+        if (mobileTone !== lastMobileTone) {
+          lastMobileTone = mobileTone;
+          window.dispatchEvent(
+            new CustomEvent("portfolio-theme-progress", {
+              detail: { tone: mobileTone },
+            }),
+          );
+        }
+      } else {
+        window.dispatchEvent(new Event("portfolio-theme-progress"));
+      }
     };
 
     const measureTimeline = () => {
@@ -255,6 +261,8 @@ export function Masthead() {
       const oldMetrics = timelineMetricsRef.current;
       const stageHeight = stage.clientHeight || window.innerHeight;
       const viewportWidth = window.innerWidth;
+      sequenceDocumentTop = window.scrollY + sequence.getBoundingClientRect().top;
+      lastMeasuredWidth = viewportWidth;
       const unitWidth =
         firstNameRef.current?.getBoundingClientRect().width ??
         viewportWidth * 0.72;
@@ -335,13 +343,18 @@ export function Masthead() {
               14,
               Math.max(6, (2 * absoluteRawVelocity) / desiredLag),
             );
-      const delta = displayTravel - targetTravel;
-      const decay = Math.exp(-omega * deltaTime);
-      const velocityStep = (displayVelocity + omega * delta) * deltaTime;
-      displayTravel =
-        targetTravel + (delta + velocityStep) * decay;
-      displayVelocity =
-        (displayVelocity - omega * velocityStep) * decay;
+      if (mobilePortrait.matches) {
+        const previousDisplay = displayTravel;
+        const follow = 1 - Math.exp(-10 * deltaTime);
+        displayTravel += (targetTravel - displayTravel) * follow;
+        displayVelocity = (displayTravel - previousDisplay) / deltaTime;
+      } else {
+        const delta = displayTravel - targetTravel;
+        const decay = Math.exp(-omega * deltaTime);
+        const velocityStep = (displayVelocity + omega * delta) * deltaTime;
+        displayTravel = targetTravel + (delta + velocityStep) * decay;
+        displayVelocity = (displayVelocity - omega * velocityStep) * decay;
+      }
 
       displayTravel = Math.min(
         metrics.totalTravel,
@@ -385,6 +398,14 @@ export function Masthead() {
     };
 
     const onResize = () => {
+      if (
+        mobilePortrait.matches &&
+        initialized &&
+        Math.abs(window.innerWidth - lastMeasuredWidth) < 2
+      ) {
+        return;
+      }
+
       if (measureTimeline()) {
         if (!initialized) {
           displayTravel = readTravel();
@@ -414,6 +435,7 @@ export function Masthead() {
     window.addEventListener("resize", onResize);
     reducedMotion.addEventListener("change", onResize);
     shortLandscape.addEventListener("change", onResize);
+    mobilePortrait.addEventListener("change", onResize);
 
     return () => {
       window.cancelAnimationFrame(frameId);
@@ -422,6 +444,7 @@ export function Masthead() {
       window.removeEventListener("resize", onResize);
       reducedMotion.removeEventListener("change", onResize);
       shortLandscape.removeEventListener("change", onResize);
+      mobilePortrait.removeEventListener("change", onResize);
       resetRoleMotion();
     };
   }, []);

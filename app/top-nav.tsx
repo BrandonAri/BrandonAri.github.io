@@ -41,6 +41,7 @@ const surfaceTone = (sampleY: number): NavigationTone => {
 export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tone, setTone] = useState<NavigationTone>("dark");
+  const toneRef = useRef<NavigationTone>("dark");
   const navRef = useRef<HTMLElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const glassFrameRef = useRef(0);
@@ -85,14 +86,148 @@ export function TopNav() {
   }, []);
 
   useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const mobilePortrait = window.matchMedia(
+      "(max-width: 620px) and (orientation: portrait)",
+    );
+    let frame = 0;
+    let lastY = Math.max(0, window.scrollY);
+    let anchorY = lastY;
+    let direction = 0;
+    let touchAnchorY = 0;
+    let ignoreScrollDirectionUntil = 0;
+
+    const setData = (name: "atTop" | "surface" | "visible", value: boolean) => {
+      const next = String(value);
+      if (nav.dataset[name] !== next) nav.dataset[name] = next;
+    };
+
+    const update = () => {
+      frame = 0;
+      if (!mobilePortrait.matches) {
+        delete nav.dataset.atTop;
+        delete nav.dataset.surface;
+        delete nav.dataset.visible;
+        return;
+      }
+
+      const y = Math.max(0, window.scrollY);
+      const atTop = y <= 18;
+      let visible = nav.dataset.visible !== "false";
+      const delta = y - lastY;
+
+      if (atTop) {
+        visible = true;
+        direction = 0;
+        anchorY = y;
+      } else if (
+        performance.now() >= ignoreScrollDirectionUntil &&
+        Math.abs(delta) >= 1
+      ) {
+        const nextDirection = delta > 0 ? 1 : -1;
+        if (nextDirection !== direction) {
+          direction = nextDirection;
+          anchorY = lastY;
+        }
+
+        const directionalTravel = y - anchorY;
+        if (nextDirection > 0 && directionalTravel > 18) {
+          visible = false;
+          if (nav.classList.contains("is-open")) setMenuOpen(false);
+        } else if (nextDirection < 0 && directionalTravel < -28) {
+          visible = true;
+        }
+      }
+
+      setData("atTop", atTop);
+      setData("surface", !atTop);
+      setData("visible", visible);
+      lastY = y;
+    };
+
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (!mobilePortrait.matches) return;
+      touchAnchorY = event.touches[0]?.clientY ?? 0;
+      ignoreScrollDirectionUntil = Number.POSITIVE_INFINITY;
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (!mobilePortrait.matches) return;
+      const nextTouchY = event.touches[0]?.clientY;
+      if (nextTouchY === undefined) return;
+      const travel = nextTouchY - touchAnchorY;
+      const atTop = window.scrollY <= 18;
+
+      if (atTop) {
+        setData("visible", true);
+      } else if (travel < -14) {
+        setData("visible", false);
+        if (nav.classList.contains("is-open")) setMenuOpen(false);
+        touchAnchorY = nextTouchY;
+      } else if (travel > 14) {
+        setData("visible", true);
+        touchAnchorY = nextTouchY;
+      }
+
+      schedule();
+    };
+
+    const onTouchEnd = () => {
+      ignoreScrollDirectionUntil = performance.now() + 1200;
+      lastY = Math.max(0, window.scrollY);
+      anchorY = lastY;
+      direction = 0;
+      schedule();
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    mobilePortrait.addEventListener("change", schedule);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      mobilePortrait.removeEventListener("change", schedule);
+    };
+  }, []);
+
+  useEffect(() => {
     const updateTone = () => {
       toneFrameRef.current = 0;
-      const sampleY = Math.max(34, navRef.current?.getBoundingClientRect().bottom ?? 70);
+      const nav = navRef.current;
+      const sampleY = Math.max(34, nav?.getBoundingClientRect().bottom ?? 70);
+      const mobilePortrait = window.matchMedia(
+        "(max-width: 620px) and (orientation: portrait)",
+      );
+      const stage = document.querySelector<HTMLElement>(".masthead-stage");
+      if (mobilePortrait.matches && stage) {
+        const bounds = stage.getBoundingClientRect();
+        if (bounds.top <= sampleY && bounds.bottom > sampleY) return;
+      }
       const nextTone = surfaceTone(sampleY);
-      setTone((current) => (current === nextTone ? current : nextTone));
-      document
-        .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-        ?.setAttribute("content", nextTone === "dark" ? "#111215" : "#f3f4f1");
+      applyTone(nextTone);
+    };
+
+    const applyTone = (nextTone: NavigationTone) => {
+      const color = nextTone === "dark" ? "#111215" : "#f3f4f1";
+      document.documentElement.dataset.chromeTone = nextTone;
+      const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (meta?.content !== color) meta?.setAttribute("content", color);
+      if (toneRef.current === nextTone) return;
+      toneRef.current = nextTone;
+      setTone(nextTone);
     };
 
     const scheduleTone = () => {
@@ -101,17 +236,30 @@ export function TopNav() {
       }
     };
 
+    const handleThemeProgress = (event: Event) => {
+      const mobilePortrait = window.matchMedia(
+        "(max-width: 620px) and (orientation: portrait)",
+      );
+      const detail = (event as CustomEvent<{ tone?: NavigationTone }>).detail;
+      if (mobilePortrait.matches && detail?.tone) {
+        applyTone(detail.tone);
+        return;
+      }
+      scheduleTone();
+    };
+
+    applyTone("dark");
     updateTone();
     window.addEventListener("scroll", scheduleTone, { passive: true });
     window.addEventListener("resize", scheduleTone);
     window.addEventListener("pageshow", scheduleTone);
-    window.addEventListener("portfolio-theme-progress", scheduleTone);
+    window.addEventListener("portfolio-theme-progress", handleThemeProgress);
     return () => {
       window.cancelAnimationFrame(toneFrameRef.current);
       window.removeEventListener("scroll", scheduleTone);
       window.removeEventListener("resize", scheduleTone);
       window.removeEventListener("pageshow", scheduleTone);
-      window.removeEventListener("portfolio-theme-progress", scheduleTone);
+      window.removeEventListener("portfolio-theme-progress", handleThemeProgress);
     };
   }, []);
 
@@ -152,7 +300,10 @@ export function TopNav() {
   return (
     <header
       className={`nav${menuOpen ? " is-open" : ""}`}
+      data-at-top="true"
+      data-surface="false"
       data-tone={tone}
+      data-visible="true"
       ref={navRef}
     >
       <div
