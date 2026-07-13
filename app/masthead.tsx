@@ -680,6 +680,8 @@ export function Masthead() {
                   ))}
                 </div>
               </div>
+
+              <span className="hero__scroll-cue" aria-hidden="true" />
             </div>
           </section>
 

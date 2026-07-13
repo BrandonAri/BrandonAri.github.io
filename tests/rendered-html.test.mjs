@@ -333,6 +333,17 @@ test("keeps the rolling name moving at idle and reverses with scroll direction",
   assert.match(css, /@media \(max-width: 980px\)[\s\S]*?\.menu-toggle[\s\S]*?display:\s*grid/);
 });
 
+test("shows a self-contrasting breathing cue on the opening screen", async () => {
+  const [masthead, css] = await Promise.all([
+    readFile(new URL("../app/masthead.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(masthead, /className="hero__scroll-cue" aria-hidden="true"/);
+  assert.match(css, /\.hero__scroll-cue\s*\{[\s\S]*?bottom:\s*max\(1\.1rem, calc\(env\(safe-area-inset-bottom, 0px\) \+ 0\.45rem\)\)[\s\S]*?background:\s*#fff[\s\S]*?clip-path:\s*polygon\(0 0, 100% 0, 50% 100%\)[\s\S]*?mix-blend-mode:\s*difference[\s\S]*?animation:\s*scroll-cue-breathe 2\.4s ease-in-out infinite/);
+  assert.match(css, /@keyframes scroll-cue-breathe\s*\{[\s\S]*?opacity:\s*0\.48[\s\S]*?translate3d\(-50%, -2px, 0\) scale\(0\.82\)[\s\S]*?opacity:\s*1[\s\S]*?translate3d\(-50%, 3px, 0\) scale\(1\.06\)/);
+});
+
 test("keeps the opening transition directly synchronized to scroll in both directions", async () => {
   const masthead = await readFile(
     new URL("../app/masthead.tsx", import.meta.url),

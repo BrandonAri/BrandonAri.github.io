@@ -438,6 +438,21 @@ video {
   white-space: nowrap;
 }
 
+.hero__scroll-cue {
+  position: absolute;
+  bottom: max(1.1rem, calc(env(safe-area-inset-bottom, 0px) + 0.45rem));
+  left: 50%;
+  z-index: 4;
+  width: 13px;
+  height: 9px;
+  pointer-events: none;
+  background: #fff;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  mix-blend-mode: difference;
+  transform-origin: 50% 45%;
+  animation: scroll-cue-breathe 2.4s ease-in-out infinite;
+}
+
 .white-intro {
   z-index: 3;
   display: grid;
@@ -1672,6 +1687,19 @@ video {
 @keyframes mobile-name-roll {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-12.5%, 0, 0); }
+}
+
+@keyframes scroll-cue-breathe {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: translate3d(-50%, -2px, 0) scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate3d(-50%, 3px, 0) scale(1.06);
+  }
 }
 
 @media (max-width: 1060px) {
