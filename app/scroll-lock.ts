@@ -67,6 +67,12 @@ export function lockPageScroll({ restoreScroll = true } = {}) {
     body.style.left = restore.body.left;
     body.style.width = restore.body.width;
     body.style.overflow = restore.body.overflow;
-    if (restore.restoreScroll) window.scrollTo(0, restore.scrollY);
+    if (restore.restoreScroll) {
+      window.scrollTo({
+        behavior: "instant",
+        left: 0,
+        top: restore.scrollY,
+      });
+    }
   };
 }

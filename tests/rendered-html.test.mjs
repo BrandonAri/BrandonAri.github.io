@@ -397,6 +397,62 @@ test("hardens the mobile Safari canvas, scroll lock, and arrows without glass", 
   assert.match(exportedHome, /viewport-fit=cover/);
 });
 
+test("finishes the reveal half of page transitions across full document loads", async () => {
+  const [transition, layout, css] = await Promise.all([
+    readFile(new URL("../app/page-transition.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(transition, /const revealFlag = "pt-reveal"/);
+  assert.match(transition, /sessionStorage\.setItem\(revealFlag, "1"\)/);
+  assert.match(transition, /if \(!document\.documentElement\.dataset\.ptReveal\) return/);
+  assert.match(transition, /targetPathRef\.current = pathname;\s*setPhase\("holding"\)/);
+  assert.match(transition, /if \(phase !== "covering"\) return;\s*return lockPageScroll\(\{ restoreScroll: false \}\)/);
+  assert.match(transition, /event\.persisted/);
+  assert.match(layout, /prePaintState/);
+  assert.match(layout, /sessionStorage\.getItem\("pt-reveal"\)/);
+  assert.match(css, /html\[data-pt-reveal\] \.page-transition-layer\s*\{[\s\S]*?visibility:\s*visible[\s\S]*?transform:\s*translate3d\(0, 0, 0\)/);
+
+  const masthead = await readFile(
+    new URL("../app/masthead.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(masthead, /const restoreAnchorTarget = \(\) =>/);
+  assert.match(masthead, /scrollIntoView\(\{ behavior: "instant", block: "start" \}\)/);
+});
+
+test("restores the page position instantly when a project sheet closes", async () => {
+  const scrollLock = await readFile(
+    new URL("../app/scroll-lock.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(scrollLock, /behavior:\s*"instant"/);
+  assert.doesNotMatch(scrollLock, /window\.scrollTo\(0, restore\.scrollY\)/);
+});
+
+test("gates phones behind an unsupported-mobile notice with a quiet entrance", async () => {
+  const [layout, gate, css] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/mobile-gate.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(layout, /<MobileGate \/>/);
+  assert.match(layout, /sessionStorage\.getItem\("mobile-gate-dismissed"\)/);
+  assert.match(gate, /This site does not support mobile phones yet\./);
+  assert.match(gate, /Still enter/);
+  assert.match(gate, /sessionStorage\.setItem\("mobile-gate-dismissed", "1"\)/);
+  assert.match(css, /\.mobile-gate\s*\{\s*display:\s*none/);
+  assert.match(
+    css,
+    /@media \(max-width: 620px\) and \(orientation: portrait\) and \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.mobile-gate\s*\{[\s\S]*?position:\s*fixed[\s\S]*?z-index:\s*4000/,
+  );
+  assert.match(css, /html\[data-mobile-gate="off"\] \.mobile-gate/);
+  assert.match(css, /\.mobile-gate__enter\s*\{[\s\S]*?rgba\(243, 238, 229, 0\.14\)/);
+});
+
 test("drives the mobile portrait opening transition with native sticky scrolling", async () => {
   const [masthead, css] = await Promise.all([
     readFile(new URL("../app/masthead.tsx", import.meta.url), "utf8"),

@@ -1,7 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { MobileGate } from "./mobile-gate";
 import { PageTransitionProvider } from "./page-transition";
+
+// Runs before first paint on every full document load: keeps the transition
+// layer covering the screen while a cross-page reveal is pending, and keeps
+// the mobile gate hidden once the visitor chose to enter on a phone.
+const prePaintState = `(function(){try{var d=document.documentElement.dataset;if(sessionStorage.getItem("pt-reveal"))d.ptReveal="1";if(sessionStorage.getItem("mobile-gate-dismissed"))d.mobileGate="off"}catch(e){}})()`;
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -53,7 +59,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <script dangerouslySetInnerHTML={{ __html: prePaintState }} />
         <PageTransitionProvider>{children}</PageTransitionProvider>
+        <MobileGate />
         <div className="orientation-guard" role="status">
           <span>Portrait view only</span>
           <strong>Rotate your phone upright.</strong>

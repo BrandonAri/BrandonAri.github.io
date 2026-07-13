@@ -329,10 +329,26 @@ export function Masthead() {
     if (firstNameRef.current) timelineResizeObserver.observe(firstNameRef.current);
     roleLines.forEach((line) => timelineResizeObserver.observe(line));
 
+    const restoreAnchorTarget = () => {
+      // The browser resolves #anchors before this effect resizes the
+      // sequence, so a freshly loaded /#section URL ends up past its target
+      // once the measured timeline replaces the CSS fallback height.
+      const hash = window.location.hash;
+      if (!hash || hash === "#top") return;
+      try {
+        document
+          .querySelector(hash)
+          ?.scrollIntoView({ behavior: "instant", block: "start" });
+      } catch {
+        // Malformed fragment selectors are ignored like the browser does.
+      }
+    };
+
     if (measureTimeline()) {
       initialized = true;
       renderTimeline(readTravel());
     }
+    restoreAnchorTarget();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("touchmove", scheduleUpdate, { passive: true });
     window.addEventListener("touchend", scheduleUpdate, { passive: true });
